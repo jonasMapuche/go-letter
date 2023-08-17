@@ -5,13 +5,19 @@ import (
 	"net/http"
 )
 
-func Controller() {
-	http.HandleFunc("/", func(writer http.ResponseWriter, request *http.Request) {
+const URL = "http://localhost:8100"
+
+func Controller() *http.ServeMux {
+
+	mux := http.NewServeMux()
+
+	mux.HandleFunc("/", func(writer http.ResponseWriter, request *http.Request) {
 		switch request.URL.Path {
 		case "/":
 			switch request.Method {
 			case "GET":
-				writer.Write([]byte("Hello World!"))
+				writer.Header().Set("Access-Control-Allow-Origin", "*")
+				writer.Write([]byte(" {'message': 'Hello World!'} "))
 			case "POST":
 				HandlePost(writer, request)
 			}
@@ -19,6 +25,9 @@ func Controller() {
 			http.NotFound(writer, request)
 		}
 	})
+
+	return mux
+
 }
 
 func HandlePost(writer http.ResponseWriter, request *http.Request) {
