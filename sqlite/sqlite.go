@@ -7,7 +7,7 @@ import (
 	_ "modernc.org/sqlite"
 )
 
-const file string = "sqlite/letter.db"
+const file string = "letter.db"
 
 func Build() tree.Arbor {
 	var verb []tree.Verb = Verb()

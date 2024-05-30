@@ -70,23 +70,25 @@ func HandleGo(writer http.ResponseWriter, request *http.Request, arbor tree.Arbo
 
 	var phrase tree.Phrase = tree.Split(result.Message, arbor)
 
-	var message string = ""
-	var class string = ""
-	for _, value := range phrase.Word {
-		if (message == "") || (class == "") {
-			message = value.Term
-			class = value.Class
-		} else {
-			message = message + ", " + value.Term
-			class = class + ", " + value.Class
+	/*
+		var message string = ""
+		var class string = ""
+		for _, value := range phrase.Word {
+			if (message == "") || (class == "") {
+				message = value.Term
+				class = value.Class
+			} else {
+				message = message + ", " + value.Term
+				class = class + ", " + value.Class
+			}
 		}
-	}
-
-	response := Answer{
-		Message: message,
-		Class:   class,
-		Kind:    phrase.Kind,
-	}
+		response := Answer{
+				Message: message,
+				Class:   class,
+				Kind:    phrase.Kind,
+			}
+	*/
+	response := phrase
 
 	responseJSON, err := json.Marshal(response)
 	checkErr(err)
