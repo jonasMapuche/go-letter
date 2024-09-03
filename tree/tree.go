@@ -1,194 +1,116 @@
 package tree
 
-import "strings"
+import (
+	"strconv"
+)
 
-type Verb struct {
-	Name     string
-	Language string
+type Notice struct {
+	high  *Notice
+	level int
+	node  int
+	value string
+	low   *Notice
 }
 
-type Noun struct {
-	Name     string
-	Language string
+func Plant() {
+	var notice *Notice
+	for i := 1; i <= 6; i++ {
+		notice = search(notice, strconv.Itoa(i))
+		insert = false
+	}
 }
 
-type Pronoun struct {
-	Name     string
-	Language string
-}
+var max_node int = 1
+var insert bool = false
 
-type Adjective struct {
-	Name     string
-	Language string
-}
-
-type Adverb struct {
-	Name     string
-	Language string
-}
-
-type Preposition struct {
-	Name     string
-	Language string
-}
-
-type Article struct {
-	Name     string
-	Language string
-}
-
-type Numeral struct {
-	Name     string
-	Language string
-}
-
-type Conjunction struct {
-	Name     string
-	Language string
-}
-
-type Interjection struct {
-	Name     string
-	Language string
-}
-
-type Arbor struct {
-	Noun         []Noun
-	Verb         []Verb
-	Pronoun      []Pronoun
-	Adjective    []Adjective
-	Adverb       []Adverb
-	Preposition  []Preposition
-	Article      []Article
-	Numeral      []Numeral
-	Interjection []Interjection
-	Conjunction  []Conjunction
-}
-
-type Word struct {
-	Term     string
-	Class    string
-	Sentence string
-}
-
-type Phrase struct {
-	Kind string
-	Word []Word
-}
-
-func GetVerb(word []Word) bool {
-	for _, term := range word {
-		if term.Class == "verbo" {
-			return true
+func search(notice *Notice, value string) *Notice {
+	var high, low bool = false, false
+	var level = 0
+	if notice == nil {
+		if max_node > 1 {
+			var exp int = 0
+			for {
+				var no_start = 1 << exp
+				var no_end = no_start + no_start - 1
+				if (max_node >= no_start) && (max_node <= no_end) {
+					level = exp
+					break
+				}
+				exp++
+			}
+		}
+		if !insert {
+			print(" -- ", level, " - ", max_node, "\n")
+			insert = true
+			return &Notice{nil, level, max_node, value, nil}
 		}
 	}
-	return false
+	if notice.high != nil {
+		notice.high = search(notice.high, value)
+	} else {
+		high = true
+	}
+	if notice.low != nil {
+		notice.low = search(notice.low, value)
+	} else {
+		low = true
+	}
+	if (((high) && (low)) || ((!high) && (low))) && (!insert) {
+		notice = writer(notice, value)
+	}
+	return notice
 }
 
-func Split(message string, arbor Arbor) Phrase {
-	var errand string = strings.ToLower(message)
-	errand = strings.ReplaceAll(errand, ".", "")
-	errand = strings.ReplaceAll(errand, "!", " ")
-	errand = strings.ReplaceAll(errand, "?", " ")
-	errand = strings.ReplaceAll(errand, ",", " ")
-
-	var word []string = strings.Split(errand, " ")
-	var unit []Word
-
-	for _, term := range word {
-		var spell Word
-		spell.Term = term
-		spell.Class = ""
-		spell.Sentence = ""
-		for _, value := range arbor.Noun {
-			if value.Name == strings.ToLower(spell.Term) {
-				spell.Class = "substantivo"
-				if GetVerb(unit) {
-					spell.Sentence = "predicado"
+func writer(notice *Notice, value string) *Notice {
+	var level int = notice.level
+	var node int = notice.node
+	if node > max_node {
+		max_node = node
+	}
+	var next_node = max_node + 1
+	var exp = 1 << level
+	if exp == 1 {
+		if notice.high == nil {
+			max_node = next_node
+			print(" / ")
+			notice.high = search(notice.high, value)
+		} else {
+			if notice.low == nil {
+				max_node = next_node
+				print(" | ")
+				notice.low = search(notice.low, value)
+			}
+		}
+	} else {
+		if node < exp+exp-1 {
+			if max_node >= exp+exp-1 {
+				if notice.high == nil {
+					max_node = next_node
+					print(" / ")
+					notice.high = search(notice.high, value)
 				} else {
-					spell.Sentence = "sujeito"
+					if notice.low == nil {
+						max_node = next_node
+						print(" | ")
+						notice.low = search(notice.low, value)
+					}
+				}
+			} else {
+				return notice
+			}
+		} else {
+			if notice.high == nil {
+				max_node = next_node
+				print(" / ")
+				notice.high = search(notice.high, value)
+			} else {
+				if notice.low == nil {
+					max_node = next_node
+					print(" | ")
+					notice.low = search(notice.low, value)
 				}
 			}
 		}
-		for _, value := range arbor.Verb {
-			if value.Name == strings.ToLower(spell.Term) {
-				spell.Class = "verbo"
-				spell.Sentence = "predicado"
-			}
-		}
-		for _, value := range arbor.Article {
-			if value.Name == strings.ToLower(spell.Term) {
-				spell.Class = "artigo"
-				spell.Sentence = ""
-			}
-		}
-		for _, value := range arbor.Pronoun {
-			if value.Name == strings.ToLower(spell.Term) {
-				spell.Class = "pronome"
-				spell.Sentence = "sujeito"
-			}
-		}
-		for _, value := range arbor.Adjective {
-			if value.Name == strings.ToLower(spell.Term) {
-				spell.Class = "adjetivo"
-				spell.Sentence = "predicado"
-			}
-		}
-		for _, value := range arbor.Adverb {
-			if value.Name == strings.ToLower(spell.Term) {
-				spell.Class = "adverbio"
-				spell.Sentence = "predicado"
-			}
-		}
-		for _, value := range arbor.Preposition {
-			if value.Name == strings.ToLower(spell.Term) {
-				spell.Class = "preposição"
-				spell.Sentence = ""
-			}
-		}
-		for _, value := range arbor.Article {
-			if value.Name == strings.ToLower(spell.Term) {
-				spell.Class = "artigo"
-				spell.Sentence = ""
-			}
-		}
-		for _, value := range arbor.Conjunction {
-			if value.Name == strings.ToLower(spell.Term) {
-				spell.Class = "conjunção"
-				spell.Sentence = ""
-			}
-		}
-		for _, value := range arbor.Interjection {
-			if value.Name == strings.ToLower(spell.Term) {
-				spell.Class = "interjeição"
-				spell.Sentence = ""
-			}
-		}
-		unit = append(unit, spell)
 	}
-
-	var class string = Type(message)
-
-	locution := Phrase{
-		Kind: class,
-		Word: unit,
-	}
-
-	return locution
-}
-
-func Type(message string) string {
-	var class string = "inconsistente"
-	if strings.Contains(message, ".") {
-		class = "declarativa" // or imperativa (uma ordem)
-	} else {
-		if strings.Contains(message, "?") {
-			class = "interrogativa"
-		} else {
-			if strings.Contains(message, "!") {
-				class = "exclamativa" // or optativa
-			}
-		}
-	}
-	return class
+	return notice
 }

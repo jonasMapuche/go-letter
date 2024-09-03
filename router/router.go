@@ -5,7 +5,7 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"letter.go/tree"
+	"letter.go/grammar"
 )
 
 const URL = "http://localhost:8100"
@@ -20,7 +20,7 @@ type Answer struct {
 	Kind    string `json:"kind"`
 }
 
-func Controller(arbor tree.Arbor) *http.ServeMux {
+func Controller(arbor grammar.Arbor) *http.ServeMux {
 
 	mux := http.NewServeMux()
 
@@ -61,14 +61,14 @@ func HandlePost(writer http.ResponseWriter, request *http.Request) {
 	writer.Write(body)
 }
 
-func HandleGo(writer http.ResponseWriter, request *http.Request, arbor tree.Arbor) {
+func HandleGo(writer http.ResponseWriter, request *http.Request, arbor grammar.Arbor) {
 	defer request.Body.Close()
 
 	var result Notice
 	var err = json.NewDecoder(request.Body).Decode(&result)
 	checkErr(err)
 
-	var phrase tree.Phrase = tree.Split(result.Message, arbor)
+	var phrase grammar.Phrase = grammar.Split(result.Message, arbor)
 
 	/*
 		var message string = ""

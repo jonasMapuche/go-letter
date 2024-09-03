@@ -3,25 +3,25 @@ package sqlite
 import (
 	"database/sql"
 
-	"letter.go/tree"
+	"letter.go/grammar"
 	_ "modernc.org/sqlite"
 )
 
 const file string = "letter.db"
 
-func Build() tree.Arbor {
-	var verb []tree.Verb = Verb()
-	var noun []tree.Noun = Noun()
-	var preposition []tree.Preposition = Preposition()
-	var article []tree.Article = Article()
-	var pronoun []tree.Pronoun = Pronoun()
-	var adjective []tree.Adjective = Adjective()
-	var adverb []tree.Adverb = Adverb()
-	var numeral []tree.Numeral = Numeral()
-	var conjunction []tree.Conjunction = Conjunction()
-	var interjection []tree.Interjection = Interjection()
+func Build() grammar.Arbor {
+	var verb []grammar.Verb = Verb()
+	var noun []grammar.Noun = Noun()
+	var preposition []grammar.Preposition = Preposition()
+	var article []grammar.Article = Article()
+	var pronoun []grammar.Pronoun = Pronoun()
+	var adjective []grammar.Adjective = Adjective()
+	var adverb []grammar.Adverb = Adverb()
+	var numeral []grammar.Numeral = Numeral()
+	var conjunction []grammar.Conjunction = Conjunction()
+	var interjection []grammar.Interjection = Interjection()
 
-	tree := tree.Arbor{
+	tree := grammar.Arbor{
 		Noun:         noun,
 		Verb:         verb,
 		Preposition:  preposition,
@@ -37,17 +37,17 @@ func Build() tree.Arbor {
 	return tree
 }
 
-func Noun() []tree.Noun {
+func Noun() []grammar.Noun {
 	database, err := sql.Open("sqlite", file)
 	checkErr(err)
 
 	rows, err := database.Query("SELECT distinct name, language FROM substantivo")
 	checkErr(err)
 
-	var nouns []tree.Noun
+	var nouns []grammar.Noun
 
 	for rows.Next() {
-		var noun tree.Noun
+		var noun grammar.Noun
 		err = rows.Scan(&noun.Name, &noun.Language)
 		checkErr(err)
 		nouns = append(nouns, noun)
@@ -56,18 +56,18 @@ func Noun() []tree.Noun {
 	return nouns
 }
 
-func Verb() []tree.Verb {
+func Verb() []grammar.Verb {
 	database, err := sql.Open("sqlite", file)
 	checkErr(err)
 
 	rows, err := database.Query("SELECT distinct name, language FROM verbo")
 	checkErr(err)
 
-	var verbs []tree.Verb
+	var verbs []grammar.Verb
 
 	for rows.Next() {
 
-		var verb tree.Verb
+		var verb grammar.Verb
 		err = rows.Scan(&verb.Name, &verb.Language)
 		checkErr(err)
 		verbs = append(verbs, verb)
@@ -76,17 +76,17 @@ func Verb() []tree.Verb {
 	return verbs
 }
 
-func Pronoun() []tree.Pronoun {
+func Pronoun() []grammar.Pronoun {
 	database, err := sql.Open("sqlite", file)
 	checkErr(err)
 
 	rows, err := database.Query("SELECT distinct name, language FROM pronome")
 	checkErr(err)
 
-	var pronouns []tree.Pronoun
+	var pronouns []grammar.Pronoun
 
 	for rows.Next() {
-		var pronoun tree.Pronoun
+		var pronoun grammar.Pronoun
 		err = rows.Scan(&pronoun.Name, &pronoun.Language)
 		checkErr(err)
 		pronouns = append(pronouns, pronoun)
@@ -95,17 +95,17 @@ func Pronoun() []tree.Pronoun {
 	return pronouns
 }
 
-func Article() []tree.Article {
+func Article() []grammar.Article {
 	database, err := sql.Open("sqlite", file)
 	checkErr(err)
 
 	rows, err := database.Query("SELECT distinct name, language FROM artigo")
 	checkErr(err)
 
-	var articles []tree.Article
+	var articles []grammar.Article
 
 	for rows.Next() {
-		var article tree.Article
+		var article grammar.Article
 		err = rows.Scan(&article.Name, &article.Language)
 		checkErr(err)
 		articles = append(articles, article)
@@ -114,17 +114,17 @@ func Article() []tree.Article {
 	return articles
 }
 
-func Adjective() []tree.Adjective {
+func Adjective() []grammar.Adjective {
 	database, err := sql.Open("sqlite", file)
 	checkErr(err)
 
 	rows, err := database.Query("SELECT distinct name, language FROM adjetivo")
 	checkErr(err)
 
-	var adjectives []tree.Adjective
+	var adjectives []grammar.Adjective
 
 	for rows.Next() {
-		var adjective tree.Adjective
+		var adjective grammar.Adjective
 		err = rows.Scan(&adjective.Name, &adjective.Language)
 		checkErr(err)
 		adjectives = append(adjectives, adjective)
@@ -133,17 +133,17 @@ func Adjective() []tree.Adjective {
 	return adjectives
 }
 
-func Adverb() []tree.Adverb {
+func Adverb() []grammar.Adverb {
 	database, err := sql.Open("sqlite", file)
 	checkErr(err)
 
 	rows, err := database.Query("SELECT distinct name, language FROM adverbio")
 	checkErr(err)
 
-	var adverbs []tree.Adverb
+	var adverbs []grammar.Adverb
 
 	for rows.Next() {
-		var adverb tree.Adverb
+		var adverb grammar.Adverb
 		err = rows.Scan(&adverb.Name, &adverb.Language)
 		checkErr(err)
 		adverbs = append(adverbs, adverb)
@@ -152,17 +152,17 @@ func Adverb() []tree.Adverb {
 	return adverbs
 }
 
-func Preposition() []tree.Preposition {
+func Preposition() []grammar.Preposition {
 	database, err := sql.Open("sqlite", file)
 	checkErr(err)
 
 	rows, err := database.Query("SELECT distinct name, language FROM preposicao")
 	checkErr(err)
 
-	var prepositions []tree.Preposition
+	var prepositions []grammar.Preposition
 
 	for rows.Next() {
-		var preposition tree.Preposition
+		var preposition grammar.Preposition
 		err = rows.Scan(&preposition.Name, &preposition.Language)
 		checkErr(err)
 		prepositions = append(prepositions, preposition)
@@ -171,17 +171,17 @@ func Preposition() []tree.Preposition {
 	return prepositions
 }
 
-func Numeral() []tree.Numeral {
+func Numeral() []grammar.Numeral {
 	database, err := sql.Open("sqlite", file)
 	checkErr(err)
 
 	rows, err := database.Query("SELECT distinct name, language FROM numeral")
 	checkErr(err)
 
-	var numerals []tree.Numeral
+	var numerals []grammar.Numeral
 
 	for rows.Next() {
-		var numeral tree.Numeral
+		var numeral grammar.Numeral
 		err = rows.Scan(&numeral.Name, &numeral.Language)
 		checkErr(err)
 		numerals = append(numerals, numeral)
@@ -190,17 +190,17 @@ func Numeral() []tree.Numeral {
 	return numerals
 }
 
-func Conjunction() []tree.Conjunction {
+func Conjunction() []grammar.Conjunction {
 	database, err := sql.Open("sqlite", file)
 	checkErr(err)
 
 	rows, err := database.Query("SELECT distinct name, language FROM conjuncao")
 	checkErr(err)
 
-	var conjunctions []tree.Conjunction
+	var conjunctions []grammar.Conjunction
 
 	for rows.Next() {
-		var conjunction tree.Conjunction
+		var conjunction grammar.Conjunction
 		err = rows.Scan(&conjunction.Name, &conjunction.Language)
 		checkErr(err)
 		conjunctions = append(conjunctions, conjunction)
@@ -209,17 +209,17 @@ func Conjunction() []tree.Conjunction {
 	return conjunctions
 }
 
-func Interjection() []tree.Interjection {
+func Interjection() []grammar.Interjection {
 	database, err := sql.Open("sqlite", file)
 	checkErr(err)
 
 	rows, err := database.Query("SELECT distinct name, language FROM interjeicao")
 	checkErr(err)
 
-	var interjections []tree.Interjection
+	var interjections []grammar.Interjection
 
 	for rows.Next() {
-		var interjection tree.Interjection
+		var interjection grammar.Interjection
 		err = rows.Scan(&interjection.Name, &interjection.Language)
 		checkErr(err)
 		interjections = append(interjections, interjection)
