@@ -39,6 +39,11 @@ func Controller(arbor grammar.Arbor) *http.ServeMux {
 			case "POST":
 				HandleGo(writer, request, arbor)
 			}
+		case "/Pronoun":
+			switch request.Method {
+			case "POST":
+				HandlePronoun(writer, request, arbor)
+			}
 		default:
 			http.NotFound(writer, request)
 		}
@@ -68,27 +73,28 @@ func HandleGo(writer http.ResponseWriter, request *http.Request, arbor grammar.A
 	var err = json.NewDecoder(request.Body).Decode(&result)
 	checkErr(err)
 
-	var phrase grammar.Phrase = grammar.Split(result.Message, arbor)
-
-	/*
-		var message string = ""
-		var class string = ""
-		for _, value := range phrase.Word {
-			if (message == "") || (class == "") {
-				message = value.Term
-				class = value.Class
-			} else {
-				message = message + ", " + value.Term
-				class = class + ", " + value.Class
-			}
-		}
-		response := Answer{
-				Message: message,
-				Class:   class,
-				Kind:    phrase.Kind,
-			}
-	*/
+	var language string = "english"
+	var phrase grammar.Phrase = grammar.Split(result.Message, arbor, language)
 	response := phrase
+
+	responseJSON, err := json.Marshal(response)
+	checkErr(err)
+
+	writer.Header().Set("Content-Type", "application/json")
+	writer.Write([]byte(responseJSON))
+}
+
+func HandlePronoun(writer http.ResponseWriter, request *http.Request, arbor grammar.Arbor) {
+	defer request.Body.Close()
+	var result Notice
+	var err = json.NewDecoder(request.Body).Decode(&result)
+	checkErr(err)
+
+	var language string = "english"
+	var phrase grammar.Phrase = grammar.Split(result.Message, arbor, language)
+	var value grammar.Phrase = grammar.Agree(phrase)
+
+	response := value
 
 	responseJSON, err := json.Marshal(response)
 	checkErr(err)

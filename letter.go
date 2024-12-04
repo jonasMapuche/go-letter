@@ -2,9 +2,9 @@ package main
 
 import (
 	"fmt"
-	"time"
 	"net/http"
-	
+	"time"
+
 	"github.com/rs/cors"
 	"letter.go/grammar"
 	"letter.go/router"

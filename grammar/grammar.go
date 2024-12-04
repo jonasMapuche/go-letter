@@ -87,7 +87,7 @@ func GetVerb(word []Word) bool {
 	return false
 }
 
-func Split(message string, arbor Arbor) Phrase {
+func Split(message string, arbor Arbor, language string) Phrase {
 	var errand string = strings.ToLower(message)
 	errand = strings.ReplaceAll(errand, ".", "")
 	errand = strings.ReplaceAll(errand, "!", " ")
@@ -103,7 +103,7 @@ func Split(message string, arbor Arbor) Phrase {
 		spell.Class = ""
 		spell.Sentence = ""
 		for _, value := range arbor.Noun {
-			if value.Name == strings.ToLower(spell.Term) {
+			if value.Name == strings.ToLower(spell.Term) && value.Language == language {
 				spell.Class = "substantivo"
 				if GetVerb(unit) {
 					spell.Sentence = "predicado"
@@ -113,55 +113,55 @@ func Split(message string, arbor Arbor) Phrase {
 			}
 		}
 		for _, value := range arbor.Verb {
-			if value.Name == strings.ToLower(spell.Term) {
+			if value.Name == strings.ToLower(spell.Term) && value.Language == language {
 				spell.Class = "verbo"
 				spell.Sentence = "predicado"
 			}
 		}
 		for _, value := range arbor.Article {
-			if value.Name == strings.ToLower(spell.Term) {
+			if value.Name == strings.ToLower(spell.Term) && value.Language == language {
 				spell.Class = "artigo"
 				spell.Sentence = ""
 			}
 		}
 		for _, value := range arbor.Pronoun {
-			if value.Name == strings.ToLower(spell.Term) {
+			if value.Name == strings.ToLower(spell.Term) && value.Language == language {
 				spell.Class = "pronome"
 				spell.Sentence = "sujeito"
 			}
 		}
 		for _, value := range arbor.Adjective {
-			if value.Name == strings.ToLower(spell.Term) {
+			if value.Name == strings.ToLower(spell.Term) && value.Language == language {
 				spell.Class = "adjetivo"
 				spell.Sentence = "predicado"
 			}
 		}
 		for _, value := range arbor.Adverb {
-			if value.Name == strings.ToLower(spell.Term) {
+			if value.Name == strings.ToLower(spell.Term) && value.Language == language {
 				spell.Class = "adverbio"
 				spell.Sentence = "predicado"
 			}
 		}
 		for _, value := range arbor.Preposition {
-			if value.Name == strings.ToLower(spell.Term) {
+			if value.Name == strings.ToLower(spell.Term) && value.Language == language {
 				spell.Class = "preposição"
 				spell.Sentence = ""
 			}
 		}
 		for _, value := range arbor.Article {
-			if value.Name == strings.ToLower(spell.Term) {
+			if value.Name == strings.ToLower(spell.Term) && value.Language == language {
 				spell.Class = "artigo"
 				spell.Sentence = ""
 			}
 		}
 		for _, value := range arbor.Conjunction {
-			if value.Name == strings.ToLower(spell.Term) {
+			if value.Name == strings.ToLower(spell.Term) && value.Language == language {
 				spell.Class = "conjunção"
 				spell.Sentence = ""
 			}
 		}
 		for _, value := range arbor.Interjection {
-			if value.Name == strings.ToLower(spell.Term) {
+			if value.Name == strings.ToLower(spell.Term) && value.Language == language {
 				spell.Class = "interjeição"
 				spell.Sentence = ""
 			}
@@ -193,4 +193,67 @@ func Type(message string) string {
 		}
 	}
 	return class
+}
+
+func Agree(phrase Phrase) Phrase {
+	var agree bool = false
+	var consent bool = false
+	for _, value := range phrase.Word {
+		if value.Class == "verbo" {
+			var vector []string
+			var term string = value.Term
+			for i := 0; i < len(term); i++ {
+				if i == 0 {
+					vector = append(vector, "_"+term[i:i+1])
+					continue
+				}
+				if i == len(term)-1 {
+					vector = append(vector, term[i:i+1]+"_")
+					continue
+				}
+				vector = append(vector, term[i:i+2])
+			}
+			for _, charter := range vector {
+				if charter == "s_" {
+					agree = true
+					break
+				}
+				if charter == "es" {
+					agree = true
+					break
+				}
+			}
+		}
+	}
+	for _, value := range phrase.Word {
+		if value.Class == "pronome" {
+			if strings.ToLower(value.Term) == "he" || strings.ToLower(value.Term) == "she" {
+				if agree {
+					consent = true
+					break
+				}
+			} else {
+				consent = true
+				break
+			}
+		}
+	}
+	if !consent {
+		for _, value := range phrase.Word {
+			if value.Class == "verbo" {
+				var unit []Word
+				var spell Word
+				spell.Term = value.Term
+				spell.Class = value.Class
+				spell.Sentence = value.Sentence
+				unit = append(unit, spell)
+				locution := Phrase{
+					Kind: phrase.Kind,
+					Word: unit,
+				}
+				return locution
+			}
+		}
+	}
+	return phrase
 }

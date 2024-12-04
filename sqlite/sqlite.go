@@ -41,7 +41,7 @@ func Noun() []grammar.Noun {
 	database, err := sql.Open("sqlite", file)
 	checkErr(err)
 
-	rows, err := database.Query("SELECT distinct name, language FROM substantivo")
+	rows, err := database.Query("SELECT distinct LOWER(name) AS name, language FROM substantivo")
 	checkErr(err)
 
 	var nouns []grammar.Noun
@@ -60,7 +60,7 @@ func Verb() []grammar.Verb {
 	database, err := sql.Open("sqlite", file)
 	checkErr(err)
 
-	rows, err := database.Query("SELECT distinct name, language FROM verbo")
+	rows, err := database.Query("SELECT distinct LOWER(name) AS name, language FROM verbo")
 	checkErr(err)
 
 	var verbs []grammar.Verb
@@ -80,7 +80,7 @@ func Pronoun() []grammar.Pronoun {
 	database, err := sql.Open("sqlite", file)
 	checkErr(err)
 
-	rows, err := database.Query("SELECT distinct name, language FROM pronome")
+	rows, err := database.Query("SELECT distinct LOWER(name) AS name, language FROM pronomes")
 	checkErr(err)
 
 	var pronouns []grammar.Pronoun
@@ -99,7 +99,7 @@ func Article() []grammar.Article {
 	database, err := sql.Open("sqlite", file)
 	checkErr(err)
 
-	rows, err := database.Query("SELECT distinct name, language FROM artigo")
+	rows, err := database.Query("SELECT distinct LOWER(name) AS name, language FROM artigos")
 	checkErr(err)
 
 	var articles []grammar.Article
@@ -118,7 +118,7 @@ func Adjective() []grammar.Adjective {
 	database, err := sql.Open("sqlite", file)
 	checkErr(err)
 
-	rows, err := database.Query("SELECT distinct name, language FROM adjetivo")
+	rows, err := database.Query("SELECT distinct LOWER(name) AS name, language FROM adjetivo")
 	checkErr(err)
 
 	var adjectives []grammar.Adjective
@@ -137,7 +137,7 @@ func Adverb() []grammar.Adverb {
 	database, err := sql.Open("sqlite", file)
 	checkErr(err)
 
-	rows, err := database.Query("SELECT distinct name, language FROM adverbio")
+	rows, err := database.Query("SELECT distinct LOWER(name) AS name, language FROM adverbios")
 	checkErr(err)
 
 	var adverbs []grammar.Adverb
@@ -156,7 +156,7 @@ func Preposition() []grammar.Preposition {
 	database, err := sql.Open("sqlite", file)
 	checkErr(err)
 
-	rows, err := database.Query("SELECT distinct name, language FROM preposicao")
+	rows, err := database.Query("SELECT distinct LOWER(name) AS name, language FROM preposicoes")
 	checkErr(err)
 
 	var prepositions []grammar.Preposition
@@ -175,7 +175,7 @@ func Numeral() []grammar.Numeral {
 	database, err := sql.Open("sqlite", file)
 	checkErr(err)
 
-	rows, err := database.Query("SELECT distinct name, language FROM numeral")
+	rows, err := database.Query("SELECT distinct LOWER(name) AS name, language FROM numerais")
 	checkErr(err)
 
 	var numerals []grammar.Numeral
@@ -194,7 +194,7 @@ func Conjunction() []grammar.Conjunction {
 	database, err := sql.Open("sqlite", file)
 	checkErr(err)
 
-	rows, err := database.Query("SELECT distinct name, language FROM conjuncao")
+	rows, err := database.Query("SELECT distinct LOWER(name) AS name, language FROM conjuncoes")
 	checkErr(err)
 
 	var conjunctions []grammar.Conjunction
@@ -213,7 +213,7 @@ func Interjection() []grammar.Interjection {
 	database, err := sql.Open("sqlite", file)
 	checkErr(err)
 
-	rows, err := database.Query("SELECT distinct name, language FROM interjeicao")
+	rows, err := database.Query("SELECT distinct LOWER(name) AS name, language FROM interjeicao")
 	checkErr(err)
 
 	var interjections []grammar.Interjection
