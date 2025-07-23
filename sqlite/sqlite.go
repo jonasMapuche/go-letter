@@ -48,6 +48,8 @@ func Forge() brand.Arbor {
 	var verb []brand.Verb = Verbs()
 	var adjective []brand.Adjective = Adjectives()
 	var noun []brand.Noun = Nouns()
+	var sentence []brand.Sentence = Sentences()
+	var auxiliary []brand.Auxiliary = Auxiliaries()
 
 	tree := brand.Arbor{
 		Adverb:      adverb,
@@ -59,6 +61,8 @@ func Forge() brand.Arbor {
 		Verb:        verb,
 		Adjective:   adjective,
 		Noun:        noun,
+		Sentence:    sentence,
+		Auxiliary:   auxiliary,
 	}
 
 	return tree
@@ -106,7 +110,7 @@ func Articles() []brand.Article {
 	database, err := sql.Open("sqlite", file)
 	checkErr(err)
 
-	rows, err := database.Query("SELECT LOWER(name) AS name, LOWER(language) AS language, LOWER(type) AS type, LOWER(number) AS number, LOWER(gender) AS gender FROM artigos")
+	rows, err := database.Query("SELECT distinct LOWER(name) AS name, LOWER(language) AS language, LOWER(type) AS type, LOWER(number) AS number, LOWER(gender) AS gender FROM artigos")
 	checkErr(err)
 
 	var articles []brand.Article
@@ -125,7 +129,7 @@ func Conjunctions() []brand.Conjunction {
 	database, err := sql.Open("sqlite", file)
 	checkErr(err)
 
-	rows, err := database.Query("SELECT LOWER(name) AS name, LOWER(language) AS language, LOWER(type) AS type FROM conjuncoes")
+	rows, err := database.Query("SELECT distinct LOWER(name) AS name, LOWER(language) AS language, LOWER(type) AS type FROM conjuncoes")
 	checkErr(err)
 
 	var conjunctions []brand.Conjunction
@@ -144,7 +148,7 @@ func Numerals() []brand.Numeral {
 	database, err := sql.Open("sqlite", file)
 	checkErr(err)
 
-	rows, err := database.Query("SELECT LOWER(name) AS name, LOWER(initial) AS initial, LOWER(language) language, LOWER(type) AS type FROM numerais")
+	rows, err := database.Query("SELECT distinct LOWER(name) AS name, LOWER(initial) AS initial, LOWER(language) language, LOWER(type) AS type FROM numerais")
 	checkErr(err)
 
 	var numerals []brand.Numeral
@@ -163,7 +167,7 @@ func Prepositions() []brand.Preposition {
 	database, err := sql.Open("sqlite", file)
 	checkErr(err)
 
-	rows, err := database.Query("SELECT LOWER(name) AS name, LOWER(language) AS language, LOWER(type) AS type FROM preposicoes")
+	rows, err := database.Query("SELECT distinct LOWER(name) AS name, LOWER(language) AS language, LOWER(type) AS type FROM preposicoes")
 	checkErr(err)
 
 	var prepositions []brand.Preposition
@@ -182,7 +186,7 @@ func Verbs() []brand.Verb {
 	database, err := sql.Open("sqlite", file)
 	checkErr(err)
 
-	rows, err := database.Query("SELECT LOWER(name) AS name, LOWER(language) AS language, LOWER(model) AS model, LOWER(mode) AS mode, LOWER(pronoun) AS pronoun FROM verbos")
+	rows, err := database.Query("SELECT distinct LOWER(name) AS name, LOWER(language) AS language, LOWER(model) AS model, LOWER(mode) AS mode, LOWER(pronoun) AS pronoun FROM verbos")
 	checkErr(err)
 
 	var verbs []brand.Verb
@@ -201,7 +205,7 @@ func Adjectives() []brand.Adjective {
 	database, err := sql.Open("sqlite", file)
 	checkErr(err)
 
-	rows, err := database.Query("SELECT LOWER(name) AS name, LOWER(lesson) AS lesson, LOWER(language) AS language FROM adjetivo")
+	rows, err := database.Query("SELECT distinct LOWER(name) AS name, LOWER(lesson) AS lesson, LOWER(language) AS language FROM adjetivo")
 	checkErr(err)
 
 	var adjectives []brand.Adjective
@@ -220,7 +224,7 @@ func Nouns() []brand.Noun {
 	database, err := sql.Open("sqlite", file)
 	checkErr(err)
 
-	rows, err := database.Query("SELECT LOWER(name) AS name, LOWER(lesson) AS lesson, LOWER(language) AS language FROM substantivo")
+	rows, err := database.Query("SELECT distinct LOWER(name) AS name, LOWER(lesson) AS lesson, LOWER(language) AS language FROM substantivo")
 	checkErr(err)
 
 	var nouns []brand.Noun
@@ -233,6 +237,44 @@ func Nouns() []brand.Noun {
 	}
 
 	return nouns
+}
+
+func Sentences() []brand.Sentence {
+	database, err := sql.Open("sqlite", file)
+	checkErr(err)
+
+	rows, err := database.Query("SELECT distinct LOWER(language) AS language, LOWER(impulse) AS impulse, LOWER(rest) AS rest FROM sentencas")
+	checkErr(err)
+
+	var sentences []brand.Sentence
+
+	for rows.Next() {
+		var sentence brand.Sentence
+		err = rows.Scan(&sentence.Language, &sentence.Impunse, &sentence.Rest)
+		checkErr(err)
+		sentences = append(sentences, sentence)
+	}
+
+	return sentences
+}
+
+func Auxiliaries() []brand.Auxiliary {
+	database, err := sql.Open("sqlite", file)
+	checkErr(err)
+
+	rows, err := database.Query("SELECT distinct LOWER(name) AS name, LOWER(language) as language, LOWER(mode) AS mode, LOWER(prefix) AS prefix, LOWER(preverb) AS preverb, LOWER(premode) AS premode FROM auxiliares")
+	checkErr(err)
+
+	var auxiliaries []brand.Auxiliary
+
+	for rows.Next() {
+		var auxiliary brand.Auxiliary
+		err = rows.Scan(&auxiliary.Name, &auxiliary.Language, &auxiliary.Mode, &auxiliary.Prefix, &auxiliary.Preverb, &auxiliary.Premode)
+		checkErr(err)
+		auxiliaries = append(auxiliaries, auxiliary)
+	}
+
+	return auxiliaries
 }
 
 func Noun() []grammar.Noun {

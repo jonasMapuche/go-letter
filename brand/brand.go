@@ -54,7 +54,7 @@ type Verb struct {
 type Auxiliary struct {
 	Name     string
 	Language string
-	Model    string
+	Mode     string
 	Prefix   string
 	Preverb  string
 	Premode  string
@@ -64,6 +64,12 @@ type Adjective struct {
 	Name     string
 	Lesson   string
 	Language string
+}
+
+type Sentence struct {
+	Language string
+	Impunse  string
+	Rest     string
 }
 
 type Noun struct {
@@ -83,4 +89,5 @@ type Arbor struct {
 	Auxiliary   []Auxiliary
 	Adjective   []Adjective
 	Noun        []Noun
+	Sentence    []Sentence
 }

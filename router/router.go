@@ -95,6 +95,16 @@ func Controller(arbor grammar.Arbor, dome brand.Arbor) *http.ServeMux {
 			case "GET":
 				HandleNoun(writer, dome)
 			}
+		case "/Sentence":
+			switch request.Method {
+			case "GET":
+				HandleSentence(writer, dome)
+			}
+		case "/Auxiliary":
+			switch request.Method {
+			case "GET":
+				HandleAuxiliary(writer, dome)
+			}
 		default:
 			http.NotFound(writer, request)
 		}
@@ -252,6 +262,30 @@ func HandleAdjective(writer http.ResponseWriter, dome brand.Arbor) {
 
 func HandleNoun(writer http.ResponseWriter, dome brand.Arbor) {
 	value := dome.Noun
+
+	response := value
+
+	responseJSON, err := json.Marshal(response)
+	checkErr(err)
+
+	writer.Header().Set("Content-Type", "application/json")
+	writer.Write([]byte(responseJSON))
+}
+
+func HandleSentence(writer http.ResponseWriter, dome brand.Arbor) {
+	value := dome.Sentence
+
+	response := value
+
+	responseJSON, err := json.Marshal(response)
+	checkErr(err)
+
+	writer.Header().Set("Content-Type", "application/json")
+	writer.Write([]byte(responseJSON))
+}
+
+func HandleAuxiliary(writer http.ResponseWriter, dome brand.Arbor) {
+	value := dome.Auxiliary
 
 	response := value
 
