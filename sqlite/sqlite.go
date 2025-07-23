@@ -3,6 +3,7 @@ package sqlite
 import (
 	"database/sql"
 
+	"letter.go/brand"
 	"letter.go/grammar"
 	_ "modernc.org/sqlite"
 )
@@ -37,6 +38,203 @@ func Build() grammar.Arbor {
 	return tree
 }
 
+func Forge() brand.Arbor {
+	var adverb []brand.Adverb = Adverbs()
+	var pronoun []brand.Pronoun = Pronouns()
+	var article []brand.Article = Articles()
+	var conjunction []brand.Conjunction = Conjunctions()
+	var numeral []brand.Numeral = Numerals()
+	var preposition []brand.Preposition = Prepositions()
+	var verb []brand.Verb = Verbs()
+	var adjective []brand.Adjective = Adjectives()
+	var noun []brand.Noun = Nouns()
+
+	tree := brand.Arbor{
+		Adverb:      adverb,
+		Pronoun:     pronoun,
+		Article:     article,
+		Conjunction: conjunction,
+		Numeral:     numeral,
+		Preposition: preposition,
+		Verb:        verb,
+		Adjective:   adjective,
+		Noun:        noun,
+	}
+
+	return tree
+}
+
+func Adverbs() []brand.Adverb {
+	database, err := sql.Open("sqlite", file)
+	checkErr(err)
+
+	rows, err := database.Query("SELECT distinct LOWER(name) AS name, LOWER(language) AS language, LOWER(type) AS type FROM adverbios")
+	checkErr(err)
+
+	var adverbs []brand.Adverb
+
+	for rows.Next() {
+		var adverb brand.Adverb
+		err = rows.Scan(&adverb.Name, &adverb.Language, &adverb.Type)
+		checkErr(err)
+		adverbs = append(adverbs, adverb)
+	}
+
+	return adverbs
+}
+
+func Pronouns() []brand.Pronoun {
+	database, err := sql.Open("sqlite", file)
+	checkErr(err)
+
+	rows, err := database.Query("SELECT distinct LOWER(name) AS name, LOWER(language) as language, LOWER(type) AS type, LOWER(number) AS number, person, LOWER(gender) gender, LOWER(context) context FROM pronomes")
+	checkErr(err)
+
+	var pronouns []brand.Pronoun
+
+	for rows.Next() {
+		var pronoun brand.Pronoun
+		err = rows.Scan(&pronoun.Name, &pronoun.Language, &pronoun.Type, &pronoun.Number, &pronoun.Person, &pronoun.Gender, &pronoun.Context)
+		checkErr(err)
+		pronouns = append(pronouns, pronoun)
+	}
+
+	return pronouns
+}
+
+func Articles() []brand.Article {
+	database, err := sql.Open("sqlite", file)
+	checkErr(err)
+
+	rows, err := database.Query("SELECT LOWER(name) AS name, LOWER(language) AS language, LOWER(type) AS type, LOWER(number) AS number, LOWER(gender) AS gender FROM artigos")
+	checkErr(err)
+
+	var articles []brand.Article
+
+	for rows.Next() {
+		var article brand.Article
+		err = rows.Scan(&article.Name, &article.Language, &article.Type, &article.Number, &article.Gender)
+		checkErr(err)
+		articles = append(articles, article)
+	}
+
+	return articles
+}
+
+func Conjunctions() []brand.Conjunction {
+	database, err := sql.Open("sqlite", file)
+	checkErr(err)
+
+	rows, err := database.Query("SELECT LOWER(name) AS name, LOWER(language) AS language, LOWER(type) AS type FROM conjuncoes")
+	checkErr(err)
+
+	var conjunctions []brand.Conjunction
+
+	for rows.Next() {
+		var conjunction brand.Conjunction
+		err = rows.Scan(&conjunction.Name, &conjunction.Language, &conjunction.Type)
+		checkErr(err)
+		conjunctions = append(conjunctions, conjunction)
+	}
+
+	return conjunctions
+}
+
+func Numerals() []brand.Numeral {
+	database, err := sql.Open("sqlite", file)
+	checkErr(err)
+
+	rows, err := database.Query("SELECT LOWER(name) AS name, LOWER(initial) AS initial, LOWER(language) language, LOWER(type) AS type FROM numerais")
+	checkErr(err)
+
+	var numerals []brand.Numeral
+
+	for rows.Next() {
+		var numeral brand.Numeral
+		err = rows.Scan(&numeral.Name, &numeral.Initial, &numeral.Language, &numeral.Type)
+		checkErr(err)
+		numerals = append(numerals, numeral)
+	}
+
+	return numerals
+}
+
+func Prepositions() []brand.Preposition {
+	database, err := sql.Open("sqlite", file)
+	checkErr(err)
+
+	rows, err := database.Query("SELECT LOWER(name) AS name, LOWER(language) AS language, LOWER(type) AS type FROM preposicoes")
+	checkErr(err)
+
+	var prepositions []brand.Preposition
+
+	for rows.Next() {
+		var preposition brand.Preposition
+		err = rows.Scan(&preposition.Name, &preposition.Language, &preposition.Type)
+		checkErr(err)
+		prepositions = append(prepositions, preposition)
+	}
+
+	return prepositions
+}
+
+func Verbs() []brand.Verb {
+	database, err := sql.Open("sqlite", file)
+	checkErr(err)
+
+	rows, err := database.Query("SELECT LOWER(name) AS name, LOWER(language) AS language, LOWER(model) AS model, LOWER(mode) AS mode, LOWER(pronoun) AS pronoun FROM verbos")
+	checkErr(err)
+
+	var verbs []brand.Verb
+
+	for rows.Next() {
+		var verb brand.Verb
+		err = rows.Scan(&verb.Name, &verb.Language, &verb.Model, &verb.Mode, &verb.Pronoun)
+		checkErr(err)
+		verbs = append(verbs, verb)
+	}
+
+	return verbs
+}
+
+func Adjectives() []brand.Adjective {
+	database, err := sql.Open("sqlite", file)
+	checkErr(err)
+
+	rows, err := database.Query("SELECT LOWER(name) AS name, LOWER(lesson) AS lesson, LOWER(language) AS language FROM adjetivo")
+	checkErr(err)
+
+	var adjectives []brand.Adjective
+
+	for rows.Next() {
+		var adjective brand.Adjective
+		err = rows.Scan(&adjective.Name, &adjective.Lesson, &adjective.Language)
+		checkErr(err)
+		adjectives = append(adjectives, adjective)
+	}
+
+	return adjectives
+}
+
+func Nouns() []brand.Noun {
+	database, err := sql.Open("sqlite", file)
+	checkErr(err)
+
+	rows, err := database.Query("SELECT LOWER(name) AS name, LOWER(lesson) AS lesson, LOWER(language) AS language FROM substantivo")
+	checkErr(err)
+
+	var nouns []brand.Noun
+
+	for rows.Next() {
+		var noun brand.Noun
+		err = rows.Scan(&noun.Name, &noun.Lesson, &noun.Language)
+		checkErr(err)
+		nouns = append(nouns, noun)
+	}
+
+	return nouns
+}
+
 func Noun() []grammar.Noun {
 	database, err := sql.Open("sqlite", file)
 	checkErr(err)
@@ -60,7 +258,7 @@ func Verb() []grammar.Verb {
 	database, err := sql.Open("sqlite", file)
 	checkErr(err)
 
-	rows, err := database.Query("SELECT distinct LOWER(name) AS name, language FROM verbo")
+	rows, err := database.Query("SELECT distinct LOWER(name) AS name, language FROM verbos")
 	checkErr(err)
 
 	var verbs []grammar.Verb
@@ -175,14 +373,14 @@ func Numeral() []grammar.Numeral {
 	database, err := sql.Open("sqlite", file)
 	checkErr(err)
 
-	rows, err := database.Query("SELECT distinct LOWER(name) AS name, language FROM numerais")
+	rows, err := database.Query("SELECT distinct LOWER(name) AS name, initial AS initial, language FROM numerais")
 	checkErr(err)
 
 	var numerals []grammar.Numeral
 
 	for rows.Next() {
 		var numeral grammar.Numeral
-		err = rows.Scan(&numeral.Name, &numeral.Language)
+		err = rows.Scan(&numeral.Name, &numeral.Initial, &numeral.Language)
 		checkErr(err)
 		numerals = append(numerals, numeral)
 	}

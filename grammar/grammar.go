@@ -1,6 +1,7 @@
 package grammar
 
 import (
+	"strconv"
 	"strings"
 )
 
@@ -40,6 +41,7 @@ type Article struct {
 }
 
 type Numeral struct {
+	Initial  int
 	Name     string
 	Language string
 }
@@ -85,6 +87,26 @@ func GetVerb(word []Word) bool {
 		}
 	}
 	return false
+}
+
+func GetNumeral(numeral []Numeral, word string, language string) bool {
+	var amount int = 0
+	var vector []string
+	for i := 0; i < len(word); i++ {
+		vector = append(vector, word[i:i+1])
+		for _, term := range numeral {
+			if term.Language == language {
+				if vector[i] == strconv.Itoa(term.Initial) {
+					amount++
+				}
+			}
+		}
+	}
+	if len(word) == amount {
+		return true
+	} else {
+		return false
+	}
 }
 
 func Split(message string, arbor Arbor, language string) Phrase {
@@ -145,19 +167,39 @@ func Split(message string, arbor Arbor, language string) Phrase {
 		for _, value := range arbor.Preposition {
 			if value.Name == strings.ToLower(spell.Term) && value.Language == language {
 				spell.Class = "preposição"
-				spell.Sentence = ""
+				if GetVerb(unit) {
+					spell.Sentence = "predicado"
+				} else {
+					spell.Sentence = "sujeito"
+				}
+			}
+		}
+		if GetNumeral(arbor.Numeral, spell.Term, language) {
+			spell.Class = "numeral"
+			if GetVerb(unit) {
+				spell.Sentence = "predicado"
+			} else {
+				spell.Sentence = "sujeito"
 			}
 		}
 		for _, value := range arbor.Article {
 			if value.Name == strings.ToLower(spell.Term) && value.Language == language {
 				spell.Class = "artigo"
-				spell.Sentence = ""
+				if GetVerb(unit) {
+					spell.Sentence = "predicado"
+				} else {
+					spell.Sentence = "sujeito"
+				}
 			}
 		}
 		for _, value := range arbor.Conjunction {
 			if value.Name == strings.ToLower(spell.Term) && value.Language == language {
 				spell.Class = "conjunção"
-				spell.Sentence = ""
+				if GetVerb(unit) {
+					spell.Sentence = "predicado"
+				} else {
+					spell.Sentence = "sujeito"
+				}
 			}
 		}
 		for _, value := range arbor.Interjection {
@@ -196,7 +238,7 @@ func Type(message string) string {
 }
 
 func Agree(phrase Phrase) Phrase {
-	var agree bool = false
+	var third bool = false
 	var consent bool = false
 	for _, value := range phrase.Word {
 		if value.Class == "verbo" {
@@ -215,11 +257,11 @@ func Agree(phrase Phrase) Phrase {
 			}
 			for _, charter := range vector {
 				if charter == "s_" {
-					agree = true
+					third = true
 					break
 				}
 				if charter == "es" {
-					agree = true
+					third = true
 					break
 				}
 			}
@@ -227,14 +269,16 @@ func Agree(phrase Phrase) Phrase {
 	}
 	for _, value := range phrase.Word {
 		if value.Class == "pronome" {
-			if strings.ToLower(value.Term) == "he" || strings.ToLower(value.Term) == "she" {
-				if agree {
+			if third {
+				if strings.ToLower(value.Term) == "he" || strings.ToLower(value.Term) == "she" {
 					consent = true
 					break
 				}
 			} else {
-				consent = true
-				break
+				if !(strings.ToLower(value.Term) == "he" || strings.ToLower(value.Term) == "she") {
+					consent = true
+					break
+				}
 			}
 		}
 	}
