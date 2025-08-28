@@ -68,7 +68,7 @@ type Adjective struct {
 
 type Sentence struct {
 	Language string
-	Impunse  string
+	Impulse  string
 	Rest     string
 }
 

@@ -2,15 +2,16 @@ package router
 
 import (
 	"encoding/json"
+	"io"
 	"io/ioutil"
 	"net/http"
+	"os"
 
 	logic "letter.go/Logic"
+	"letter.go/arquive"
 	"letter.go/brand"
 	"letter.go/grammar"
 )
-
-const URL = "http://localhost:8100"
 
 type Notice struct {
 	Message string `json:"message"`
@@ -25,6 +26,8 @@ type Answer struct {
 type Grammar struct {
 	Kind string `json:"kind"`
 }
+
+var name_file []int32
 
 func Controller(arbor grammar.Arbor, dome brand.Arbor) *http.ServeMux {
 
@@ -104,6 +107,15 @@ func Controller(arbor grammar.Arbor, dome brand.Arbor) *http.ServeMux {
 			switch request.Method {
 			case "GET":
 				HandleAuxiliary(writer, dome)
+			}
+		case "/File":
+			switch request.Method {
+			case "POST":
+				HandleFile(writer, request)
+			case "GET":
+				HandleDownload(writer)
+			case "DELETE":
+				HandleDelete(writer)
 			}
 		default:
 			http.NotFound(writer, request)
@@ -294,6 +306,73 @@ func HandleAuxiliary(writer http.ResponseWriter, dome brand.Arbor) {
 
 	writer.Header().Set("Content-Type", "application/json")
 	writer.Write([]byte(responseJSON))
+}
+
+func HandleFile(writer http.ResponseWriter, request *http.Request) {
+	defer request.Body.Close()
+
+	file, header, err := request.FormFile("fileUpload")
+	checkErr(err)
+	defer file.Close()
+
+	tempFile, err := os.CreateTemp("", "uploaded-*.txt")
+	checkErr(err)
+
+	_, err = io.Copy(tempFile, file)
+	checkErr(err)
+
+	fileContent, err := os.ReadFile(tempFile.Name())
+	defer tempFile.Close()
+	defer os.Remove(tempFile.Name())
+
+	var expression []byte = fileContent
+
+	name_file = []rune(header.Filename)
+
+	/*
+		if len(name_file) > 0 {
+			name_file = name_file[:len(name_file)]
+		}
+	*/
+
+	arquive.Write(expression, string(name_file))
+	checkErr(err)
+
+	writer.Header().Set("Access-Control-Allow-Origin", "*")
+	writer.Write([]byte("Successful"))
+}
+
+func HandleDownload(writer http.ResponseWriter) {
+	var file_path string = string(name_file)
+
+	if len(name_file) == 0 {
+		writer.Header().Set("Access-Control-Allow-Origin", "*")
+		writer.Write([]byte("Unsuccessful"))
+		return
+	}
+	file, err := os.Open(file_path)
+	checkErr(err)
+	defer file.Close()
+
+	writer.Header().Set("Content-Disposition", "attachment; filename="+string(name_file))
+	writer.Header().Set("Content-Type", "application/octet-stream")
+
+	_, err = io.Copy(writer, file)
+	checkErr(err)
+}
+
+func HandleDelete(writer http.ResponseWriter) {
+	var file_path string = string(name_file)
+
+	if len(name_file) == 0 {
+		writer.Header().Set("Access-Control-Allow-Origin", "*")
+		writer.Write([]byte("Unsuccessful"))
+		return
+	}
+	err := os.Remove(file_path)
+	checkErr(err)
+	writer.Header().Set("Access-Control-Allow-Origin", "*")
+	writer.Write([]byte("Successful"))
 }
 
 func checkErr(err error) {

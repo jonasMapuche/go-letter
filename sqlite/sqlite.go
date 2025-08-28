@@ -250,7 +250,7 @@ func Sentences() []brand.Sentence {
 
 	for rows.Next() {
 		var sentence brand.Sentence
-		err = rows.Scan(&sentence.Language, &sentence.Impunse, &sentence.Rest)
+		err = rows.Scan(&sentence.Language, &sentence.Impulse, &sentence.Rest)
 		checkErr(err)
 		sentences = append(sentences, sentence)
 	}
