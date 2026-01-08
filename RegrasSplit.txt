@@ -1,0 +1,95 @@
+func NotAdverb(word []string, embendding map[Dictionary]int, arbor Arbor, language string) []string {
+	var vocable []string
+	var salt bool = false
+	var adverb string = "do not"
+	var pares []Order
+	pares = OrderDictionary(embendding)
+	for _, order := range pares {
+		var term = order.Key.First + " " + order.Key.Second
+		if salt {
+			salt = false
+			continue
+		}
+		for _, value := range arbor.Adverb {
+			if value.Name == strings.ToLower(order.Key.Second) && value.Language == language {
+				if strings.ToLower(term) == adverb {
+					vocable = append(vocable, term)
+					salt = true
+					break
+				}
+			}
+		}
+		if !salt {
+			vocable = append(vocable, order.Key.First)
+		}
+	}
+	return vocable
+}
+
+func DoubleVerb(word []string, embendding map[Dictionary]int, arbor Arbor, language string) []string {
+	var vocable []string
+	var salt bool = false
+	var pares []Order
+	pares = OrderDictionary(embendding)
+	for _, order := range pares {
+		var term = order.Key.First + " " + order.Key.Second
+		if salt {
+			salt = false
+			continue
+		}
+		for _, value := range arbor.Verb {
+			if value.Name == strings.ToLower(term) && value.Language == language {
+				vocable = append(vocable, term)
+				salt = true
+				break
+			}
+		}
+		if !salt {
+			vocable = append(vocable, order.Key.First)
+		}
+	}
+	return vocable
+}
+
+func SecondVerb(word []string, embendding map[Dictionary]int, arbor Arbor, language string) []string {
+	var vocable []string
+	var salt bool = false
+	var preposition string = "to"
+	var pares []Order
+	pares = OrderDictionary(embendding)
+	for _, order := range pares {
+		var term = order.Key.First + " " + order.Key.Second
+		if salt {
+			salt = false
+			continue
+		}
+		if order.Key.First == preposition {
+			for _, value := range arbor.Verb {
+				if value.Name == strings.ToLower(order.Key.Second) && value.Language == language {
+					vocable = append(vocable, term)
+					salt = true
+					break
+				}
+			}
+		}
+		if !salt {
+			vocable = append(vocable, word[order.Value])
+			if order.Key.First != "" && order.Key.Second != "" {
+				salt = true
+			}
+		}
+	}
+	return vocable
+}
+
+func SplitEnglish(word []string, arbor Arbor, language string) []string {
+	var dictionary = make(map[Dictionary]int)
+	dictionary = SetDictionary(word)
+	var double []string
+	double = DoubleVerb(word, dictionary, arbor, language)
+	var second []string
+	second = SecondVerb(double, dictionary, arbor, language)
+	var adverb []string
+	adverb = NotAdverb(second, dictionary, arbor, language)
+	return adverb
+}

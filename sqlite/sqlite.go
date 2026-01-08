@@ -3,6 +3,7 @@ package sqlite
 import (
 	"database/sql"
 
+	"letter.go/arquive"
 	"letter.go/brand"
 	"letter.go/grammar"
 	_ "modernc.org/sqlite"
@@ -186,7 +187,10 @@ func Verbs() []brand.Verb {
 	database, err := sql.Open("sqlite", file)
 	checkErr(err)
 
-	rows, err := database.Query("SELECT distinct LOWER(name) AS name, LOWER(language) AS language, LOWER(model) AS model, LOWER(mode) AS mode, LOWER(pronoun) AS pronoun FROM verbos")
+	//rows, err := database.Query("SELECT distinct LOWER(name) AS name, LOWER(language) AS language, LOWER(model) AS model, LOWER(mode) AS mode, LOWER(pronoun) AS pronoun FROM verbos")
+	var sql string = arquive.Input("verb_sqlite_with.sql")
+
+	rows, err := database.Query(sql)
 	checkErr(err)
 
 	var verbs []brand.Verb
@@ -199,6 +203,10 @@ func Verbs() []brand.Verb {
 	}
 
 	return verbs
+}
+
+func Input(s string) any {
+	panic("unimplemented")
 }
 
 func Adjectives() []brand.Adjective {
@@ -300,7 +308,11 @@ func Verb() []grammar.Verb {
 	database, err := sql.Open("sqlite", file)
 	checkErr(err)
 
-	rows, err := database.Query("SELECT distinct LOWER(name) AS name, language FROM verbos")
+	//rows, err := database.Query("SELECT distinct LOWER(name) AS name, language FROM verbos")
+
+	var sql string = arquive.Input("verb_brand_with.sql")
+	rows, err := database.Query(sql)
+
 	checkErr(err)
 
 	var verbs []grammar.Verb

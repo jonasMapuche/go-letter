@@ -26,7 +26,7 @@ func main() {
 	fmt.Println("| Date and time: ", end)
 	fmt.Println("|-------------------------------------------------")
 	fmt.Println("| SQLite...")
-	fmt.Println("| Grammar...")
+	fmt.Println("| Brand...")
 	var dome brand.Arbor = sqlite.Forge()
 	end = time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), time.Now().Hour(), time.Now().Minute(), 0, 0, time.Local)
 	fmt.Println("| Date and time: ", end)

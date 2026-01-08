@@ -13,6 +13,25 @@ import (
 	"letter.go/grammar"
 )
 
+type Color struct {
+	Red   float64 `json:"red"`
+	Green float64 `json:"green"`
+	Blue  float64 `json:"blue"`
+	Alpha float64 `json:"alpha"`
+}
+
+type User struct {
+	Name  string `json:"name"`
+	Image string `json:"image"`
+	Color Color  `json:"color"`
+}
+
+type Observe struct {
+	Sender   User   `json:"sender"`
+	Language string `json:"language"`
+	Message  string `json:"message"`
+}
+
 type Notice struct {
 	Message string `json:"message"`
 }
@@ -47,6 +66,16 @@ func Controller(arbor grammar.Arbor, dome brand.Arbor) *http.ServeMux {
 			switch request.Method {
 			case "POST":
 				HandleGo(writer, request, arbor)
+			}
+		case "/Message":
+			switch request.Method {
+			case "POST":
+				HandleMessage(writer, request, arbor)
+			}
+		case "/Translate":
+			switch request.Method {
+			case "POST":
+				HandleTranslate(writer, request, arbor)
 			}
 		case "/Logic":
 			switch request.Method {
@@ -149,6 +178,42 @@ func HandleGo(writer http.ResponseWriter, request *http.Request, arbor grammar.A
 	var language string = "english"
 	var phrase grammar.Phrase = grammar.Split(result.Message, arbor, language)
 	response := phrase
+
+	responseJSON, err := json.Marshal(response)
+	checkErr(err)
+
+	writer.Header().Set("Content-Type", "application/json")
+	writer.Write([]byte(responseJSON))
+}
+
+func HandleMessage(writer http.ResponseWriter, request *http.Request, arbor grammar.Arbor) {
+	defer request.Body.Close()
+
+	var result Observe
+	var err = json.NewDecoder(request.Body).Decode(&result)
+	checkErr(err)
+
+	var language string = result.Language
+	var phrase []grammar.Phrase = grammar.Snap(result.Message, arbor, language)
+	response := phrase
+
+	responseJSON, err := json.Marshal(response)
+	checkErr(err)
+
+	writer.Header().Set("Content-Type", "application/json")
+	writer.Write([]byte(responseJSON))
+}
+
+func HandleTranslate(writer http.ResponseWriter, request *http.Request, arbor grammar.Arbor) {
+	defer request.Body.Close()
+
+	var result Observe
+	var err = json.NewDecoder(request.Body).Decode(&result)
+	checkErr(err)
+
+	var language string = result.Language
+	var interpret []grammar.Interpret = grammar.Translate(result.Message, arbor, language)
+	response := interpret
 
 	responseJSON, err := json.Marshal(response)
 	checkErr(err)
