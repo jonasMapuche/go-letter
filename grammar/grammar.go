@@ -405,7 +405,7 @@ func Slash(word []Word, arbor Arbor, language string) []Word {
 					double = DoubleVerb(term)
 				}
 			}
-			if value.Name == strings.ToLower(term) && value.Language == language {
+			if value.Name == strings.ToLower(term) && value.Language == language && spell.Sentence == "" {
 				if preposition || !second || double {
 					spell.Class = VERB
 					spell.Sentence = PREDICATIVE
@@ -413,7 +413,7 @@ func Slash(word []Word, arbor Arbor, language string) []Word {
 			}
 		}
 		for _, value := range arbor.Noun {
-			if value.Name == strings.ToLower(spell.Term) && value.Language == language {
+			if value.Name == strings.ToLower(spell.Term) && value.Language == language && spell.Sentence == "" {
 				spell.Class = NOUN
 				if GetVerb(unit) {
 					spell.Sentence = PREDICATIVE
@@ -423,7 +423,7 @@ func Slash(word []Word, arbor Arbor, language string) []Word {
 			}
 		}
 		for _, value := range arbor.Pronoun {
-			if value.Name == strings.ToLower(spell.Term) && value.Language == language {
+			if value.Name == strings.ToLower(spell.Term) && value.Language == language && spell.Sentence == "" {
 				spell.Class = PRONOUN
 				if GetVerb(unit) {
 					spell.Sentence = PREDICATIVE
@@ -433,7 +433,7 @@ func Slash(word []Word, arbor Arbor, language string) []Word {
 			}
 		}
 		for _, value := range arbor.Adjective {
-			if value.Name == strings.ToLower(spell.Term) && value.Language == language {
+			if value.Name == strings.ToLower(spell.Term) && value.Language == language && spell.Sentence == "" {
 				spell.Class = ADJECTIVE
 				if GetVerb(unit) {
 					spell.Sentence = PREDICATIVE
@@ -447,7 +447,7 @@ func Slash(word []Word, arbor Arbor, language string) []Word {
 			if language == ENGLISH {
 				term = SplitAdverb(spell.Term)
 			}
-			if value.Name == strings.ToLower(term) && value.Language == language {
+			if value.Name == strings.ToLower(term) && value.Language == language && spell.Sentence == "" {
 				spell.Class = ADVERB
 				var predicative bool = AdverbialPredicative(locution[order+1].Term, arbor, language)
 				if GetVerb(unit) || predicative {
@@ -458,7 +458,7 @@ func Slash(word []Word, arbor Arbor, language string) []Word {
 			}
 		}
 		for _, value := range arbor.Preposition {
-			if value.Name == strings.ToLower(spell.Term) && value.Language == language {
+			if value.Name == strings.ToLower(spell.Term) && value.Language == language && spell.Sentence == "" {
 				spell.Class = PREPOSITION
 				if GetVerb(unit) {
 					spell.Sentence = PREDICATIVE
@@ -467,7 +467,7 @@ func Slash(word []Word, arbor Arbor, language string) []Word {
 				}
 			}
 		}
-		if GetNumeral(arbor.Numeral, spell.Term, language) {
+		if GetNumeral(arbor.Numeral, spell.Term, language) && spell.Sentence == "" {
 			spell.Class = NUMERAL
 			if GetVerb(unit) {
 				spell.Sentence = PREDICATIVE
@@ -476,7 +476,7 @@ func Slash(word []Word, arbor Arbor, language string) []Word {
 			}
 		}
 		for _, value := range arbor.Numeral {
-			if value.Name == strings.ToLower(spell.Term) && value.Language == language {
+			if value.Name == strings.ToLower(spell.Term) && value.Language == language && spell.Sentence == "" {
 				spell.Class = NUMERAL
 				if GetVerb(unit) {
 					spell.Sentence = PREDICATIVE
@@ -486,7 +486,7 @@ func Slash(word []Word, arbor Arbor, language string) []Word {
 			}
 		}
 		for _, value := range arbor.Article {
-			if value.Name == strings.ToLower(spell.Term) && value.Language == language {
+			if value.Name == strings.ToLower(spell.Term) && value.Language == language && spell.Sentence == "" {
 				spell.Class = ARTICLE
 				if GetVerb(unit) {
 					spell.Sentence = PREDICATIVE
@@ -496,7 +496,7 @@ func Slash(word []Word, arbor Arbor, language string) []Word {
 			}
 		}
 		for _, value := range arbor.Conjunction {
-			if value.Name == strings.ToLower(spell.Term) && value.Language == language {
+			if value.Name == strings.ToLower(spell.Term) && value.Language == language && spell.Sentence == "" {
 				spell.Class = CONJUNCTION
 				if GetVerb(unit) {
 					spell.Sentence = PREDICATIVE
@@ -506,7 +506,7 @@ func Slash(word []Word, arbor Arbor, language string) []Word {
 			}
 		}
 		for _, value := range arbor.Interjection {
-			if value.Name == strings.ToLower(spell.Term) && value.Language == language {
+			if value.Name == strings.ToLower(spell.Term) && value.Language == language && spell.Sentence == "" {
 				spell.Class = INTERJECTION
 				spell.Sentence = ""
 			}
