@@ -1,12 +1,10 @@
 package arquive
 
 import (
+	"embed"
 	"io/ioutil"
-	"os"
 	"strings"
 )
-
-const directory = "input/"
 
 func Write(expression []byte, file string) {
 	output(expression, file)
@@ -20,9 +18,14 @@ func output(expression []byte, file string) {
 	}
 }
 
+var diretory = "input"
+
+//go:embed input*
+var file embed.FS
+
 func Input(arquive string) string {
-	var file_path string = directory + arquive
-	content, err := os.ReadFile(file_path)
+	var file_path string = "input/" + arquive
+	content, err := file.ReadFile(file_path)
 	checkErr(err)
 	var sql = string(content)
 	sql = strings.ReplaceAll(sql, "\r", " ")
