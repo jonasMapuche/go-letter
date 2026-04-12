@@ -78,6 +78,12 @@ type Noun struct {
 	Language string
 }
 
+type Model struct {
+	Name     string
+	Lesson   string
+	Language string
+}
+
 type Arbor struct {
 	Adverb      []Adverb
 	Pronoun     []Pronoun
@@ -90,4 +96,5 @@ type Arbor struct {
 	Adjective   []Adjective
 	Noun        []Noun
 	Sentence    []Sentence
+	Model       []Model
 }

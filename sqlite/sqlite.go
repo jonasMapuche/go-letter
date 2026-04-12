@@ -51,6 +51,7 @@ func Forge() brand.Arbor {
 	var noun []brand.Noun = Nouns()
 	var sentence []brand.Sentence = Sentences()
 	var auxiliary []brand.Auxiliary = Auxiliaries()
+	var model []brand.Model = Models()
 
 	tree := brand.Arbor{
 		Adverb:      adverb,
@@ -64,6 +65,7 @@ func Forge() brand.Arbor {
 		Noun:        noun,
 		Sentence:    sentence,
 		Auxiliary:   auxiliary,
+		Model:       model,
 	}
 
 	return tree
@@ -245,6 +247,25 @@ func Nouns() []brand.Noun {
 	}
 
 	return nouns
+}
+
+func Models() []brand.Model {
+	database, err := sql.Open("sqlite", file)
+	checkErr(err)
+
+	rows, err := database.Query("SELECT distinct LOWER(name) AS name, LOWER(lesson) AS lesson, LOWER(language) AS language FROM verbo")
+	checkErr(err)
+
+	var verbs []brand.Model
+
+	for rows.Next() {
+		var verb brand.Model
+		err = rows.Scan(&verb.Name, &verb.Lesson, &verb.Language)
+		checkErr(err)
+		verbs = append(verbs, verb)
+	}
+
+	return verbs
 }
 
 func Sentences() []brand.Sentence {

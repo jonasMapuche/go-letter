@@ -127,6 +127,11 @@ func Controller(arbor grammar.Arbor, dome brand.Arbor) *http.ServeMux {
 			case "GET":
 				HandleNoun(writer, dome)
 			}
+		case "/Model":
+			switch request.Method {
+			case "GET":
+				HandleModel(writer, dome)
+			}
 		case "/Sentence":
 			switch request.Method {
 			case "GET":
@@ -339,6 +344,18 @@ func HandleAdjective(writer http.ResponseWriter, dome brand.Arbor) {
 
 func HandleNoun(writer http.ResponseWriter, dome brand.Arbor) {
 	value := dome.Noun
+
+	response := value
+
+	responseJSON, err := json.Marshal(response)
+	checkErr(err)
+
+	writer.Header().Set("Content-Type", "application/json")
+	writer.Write([]byte(responseJSON))
+}
+
+func HandleModel(writer http.ResponseWriter, dome brand.Arbor) {
+	value := dome.Model
 
 	response := value
 
