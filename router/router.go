@@ -46,7 +46,18 @@ type Grammar struct {
 	Kind string `json:"kind"`
 }
 
+type Download struct {
+	File string `json:"download"`
+}
+
 var name_file []int32
+
+const (
+	FILE_DIR      = "./raspberry"
+	FILE_DIR_BAR  = "./raspberry/"
+	FILE_TEMP     = "./temp"
+	FILE_TEMP_BAR = "./temp/"
+)
 
 func Controller(arbor grammar.Arbor, dome brand.Arbor) *http.ServeMux {
 
@@ -146,10 +157,11 @@ func Controller(arbor grammar.Arbor, dome brand.Arbor) *http.ServeMux {
 			switch request.Method {
 			case "POST":
 				HandleFile(writer, request)
-			case "GET":
-				HandleDownload(writer)
-			case "DELETE":
-				HandleDelete(writer)
+			}
+		case "/Download":
+			switch request.Method {
+			case "POST":
+				HandleDownload(writer, request)
 			}
 		default:
 			http.NotFound(writer, request)
@@ -408,26 +420,33 @@ func HandleFile(writer http.ResponseWriter, request *http.Request) {
 	defer os.Remove(tempFile.Name())
 
 	var expression []byte = fileContent
-
-	name_file = []rune(header.Filename)
+	var register []int32 = []rune(header.Filename)
+	var path_register = FILE_DIR_BAR + string(register)
 
 	/*
 		if len(name_file) > 0 {
-			name_file = name_file[:len(name_file)]
-		}
+				name_file = name_file[:len(name_file)]
+			}
 	*/
 
-	arquive.Write(expression, string(name_file))
+	arquive.Write(expression, path_register)
 	checkErr(err)
 
 	writer.Header().Set("Access-Control-Allow-Origin", "*")
 	writer.Write([]byte("Successful"))
 }
 
-func HandleDownload(writer http.ResponseWriter) {
-	var file_path string = string(name_file)
+func HandleDownload(writer http.ResponseWriter, request *http.Request) {
+	defer request.Body.Close()
 
-	if len(name_file) == 0 {
+	var result Download
+	var err = json.NewDecoder(request.Body).Decode(&result)
+	checkErr(err)
+
+	var file_name string = result.File
+	var file_path = FILE_DIR_BAR + file_name
+
+	if len(file_name) == 0 {
 		writer.Header().Set("Access-Control-Allow-Origin", "*")
 		writer.Write([]byte("Unsuccessful"))
 		return
