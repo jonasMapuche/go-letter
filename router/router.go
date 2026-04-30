@@ -50,13 +50,13 @@ type Download struct {
 	File string `json:"download"`
 }
 
-var name_file []int32
-
 const (
 	FILE_DIR      = "./raspberry"
 	FILE_DIR_BAR  = "./raspberry/"
 	FILE_TEMP     = "./temp"
 	FILE_TEMP_BAR = "./temp/"
+	ENVIRONMENT   = "Development"
+	LOCAL         = "Development"
 )
 
 func Controller(arbor grammar.Arbor, dome brand.Arbor) *http.ServeMux {
@@ -157,11 +157,15 @@ func Controller(arbor grammar.Arbor, dome brand.Arbor) *http.ServeMux {
 			switch request.Method {
 			case "POST":
 				HandleFile(writer, request)
+			case "DELETE":
+				HandleDelete(writer, request)
 			}
 		case "/Download":
 			switch request.Method {
 			case "POST":
 				HandleDownload(writer, request)
+			case "GET":
+				HandleDownloadGet(writer, request)
 			}
 		default:
 			http.NotFound(writer, request)
@@ -444,7 +448,12 @@ func HandleDownload(writer http.ResponseWriter, request *http.Request) {
 	checkErr(err)
 
 	var file_name string = result.File
-	var file_path = FILE_DIR_BAR + file_name
+	var file_path string = ""
+	if LOCAL == ENVIRONMENT {
+		file_path = FILE_DIR_BAR + file_name
+	} else {
+		file_path = file_name
+	}
 
 	if len(file_name) == 0 {
 		writer.Header().Set("Access-Control-Allow-Origin", "*")
@@ -455,22 +464,63 @@ func HandleDownload(writer http.ResponseWriter, request *http.Request) {
 	checkErr(err)
 	defer file.Close()
 
-	writer.Header().Set("Content-Disposition", "attachment; filename="+string(name_file))
+	writer.Header().Set("Content-Disposition", "attachment; filename="+file_name)
 	writer.Header().Set("Content-Type", "application/octet-stream")
 
 	_, err = io.Copy(writer, file)
 	checkErr(err)
 }
 
-func HandleDelete(writer http.ResponseWriter) {
-	var file_path string = string(name_file)
+func HandleDownloadGet(writer http.ResponseWriter, request *http.Request) {
+	var query = request.URL.Query()
+	var name string = query.Get("name")
 
-	if len(name_file) == 0 {
+	var file_name string = name
+	var file_path string = ""
+	if LOCAL == ENVIRONMENT {
+		file_path = FILE_DIR_BAR + file_name
+	} else {
+		file_path = file_name
+	}
+
+	if len(file_name) == 0 {
 		writer.Header().Set("Access-Control-Allow-Origin", "*")
 		writer.Write([]byte("Unsuccessful"))
 		return
 	}
-	err := os.Remove(file_path)
+	file, err := os.Open(file_path)
+	checkErr(err)
+	defer file.Close()
+
+	writer.Header().Set("Content-Disposition", "attachment; filename="+file_name)
+	writer.Header().Set("Content-Type", "application/octet-stream")
+
+	_, err = io.Copy(writer, file)
+	checkErr(err)
+}
+
+func HandleDelete(writer http.ResponseWriter, request *http.Request) {
+	defer request.Body.Close()
+
+	var result Download
+	var err = json.NewDecoder(request.Body).Decode(&result)
+	checkErr(err)
+
+	var file_name string = result.File
+	var file_path string = ""
+	if LOCAL == ENVIRONMENT {
+		file_path = FILE_DIR_BAR + file_name
+	} else {
+		file_path = file_name
+	}
+
+	if len(file_name) == 0 {
+		writer.Header().Set("Access-Control-Allow-Origin", "*")
+		writer.Write([]byte("Unsuccessful"))
+		return
+	}
+
+	defer os.Remove(file_path)
 	checkErr(err)
 	writer.Header().Set("Access-Control-Allow-Origin", "*")
 	writer.Write([]byte("Successful"))
