@@ -56,7 +56,7 @@ const (
 	FILE_TEMP     = "./temp"
 	FILE_TEMP_BAR = "./temp/"
 	ENVIRONMENT   = "Development"
-	LOCAL         = "Development"
+	LOCAL         = "Production"
 )
 
 func Controller(arbor grammar.Arbor, dome brand.Arbor) *http.ServeMux {
@@ -159,6 +159,8 @@ func Controller(arbor grammar.Arbor, dome brand.Arbor) *http.ServeMux {
 				HandleFile(writer, request)
 			case "DELETE":
 				HandleDelete(writer, request)
+			case "GET":
+				HandleDownloadGet(writer, request)
 			}
 		case "/Download":
 			switch request.Method {
@@ -425,7 +427,13 @@ func HandleFile(writer http.ResponseWriter, request *http.Request) {
 
 	var expression []byte = fileContent
 	var register []int32 = []rune(header.Filename)
-	var path_register = FILE_DIR_BAR + string(register)
+
+	var path_register string = ""
+	if LOCAL == ENVIRONMENT {
+		path_register = FILE_DIR_BAR + string(register)
+	} else {
+		path_register = string(register)
+	}
 
 	/*
 		if len(name_file) > 0 {

@@ -246,6 +246,17 @@ func SplitEnglish(word []string, arbor Arbor, language string) []string {
 	return vocable
 }
 
+func SplitNoun(word string) string {
+	var vocable []string = strings.Split(word, " ")
+	var noun string = ""
+	if len(vocable) > 1 {
+		noun = vocable[1]
+	} else {
+		noun = vocable[0]
+	}
+	return noun
+}
+
 func SplitVerb(word string) string {
 	var vocable []string = strings.Split(word, " ")
 	var preposition string = TO
@@ -413,7 +424,8 @@ func Slash(word []Word, arbor Arbor, language string) []Word {
 			}
 		}
 		for _, value := range arbor.Noun {
-			if value.Name == strings.ToLower(spell.Term) && value.Language == language && spell.Sentence == "" {
+			var term string = SplitNoun(value.Name)
+			if term == strings.ToLower(spell.Term) && value.Language == language && spell.Sentence == "" {
 				spell.Class = NOUN
 				if GetVerb(unit) {
 					spell.Sentence = PREDICATIVE
@@ -548,7 +560,8 @@ func Translate(message string, arbor Arbor, language string) []Interpret {
 			}
 		}
 		for _, value := range arbor.Noun {
-			if value.Name == strings.ToLower(spell.Word) && value.Language == language {
+			var term string = SplitNoun(value.Name)
+			if term == strings.ToLower(spell.Word) && value.Language == language {
 				spell.Grade = append(spell.Grade, NOUN)
 			}
 		}
