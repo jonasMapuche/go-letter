@@ -6,11 +6,13 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"strconv"
 
-	logic "letter.go/Logic"
+	"gocv.io/x/gocv"
 	"letter.go/arquive"
 	"letter.go/brand"
 	"letter.go/grammar"
+	"letter.go/logic"
 )
 
 type Color struct {
@@ -168,6 +170,16 @@ func Controller(arbor grammar.Arbor, dome brand.Arbor) *http.ServeMux {
 				HandleDownload(writer, request)
 			case "GET":
 				HandleDownloadGet(writer, request)
+			}
+		case "/Syntax":
+			switch request.Method {
+			case "POST":
+				HandleSyntax(writer, request, arbor, dome)
+			}
+		case "/Stream":
+			switch request.Method {
+			case "GET":
+				HandleStream(writer, request)
 			}
 		default:
 			http.NotFound(writer, request)
@@ -532,6 +544,64 @@ func HandleDelete(writer http.ResponseWriter, request *http.Request) {
 	checkErr(err)
 	writer.Header().Set("Access-Control-Allow-Origin", "*")
 	writer.Write([]byte("Successful"))
+}
+
+func HandleSyntax(writer http.ResponseWriter, request *http.Request, arbor grammar.Arbor, dome brand.Arbor) {
+	defer request.Body.Close()
+
+	var result Observe
+	var err = json.NewDecoder(request.Body).Decode(&result)
+	checkErr(err)
+
+	var language string = result.Language
+
+	var phrase []grammar.Phrase = grammar.Snap(result.Message, arbor, language)
+	var syntax []grammar.Recite = grammar.Syntax(phrase, dome, language)
+
+	response := syntax
+
+	responseJSON, err := json.Marshal(response)
+	checkErr(err)
+
+	writer.Header().Set("Content-Type", "application/json")
+	writer.Write([]byte(responseJSON))
+}
+
+var (
+	webcam *gocv.VideoCapture
+	err    error
+)
+
+func Video() {
+	deviceID := 1
+	webcam, err = gocv.VideoCaptureDevice(deviceID)
+	if err != nil {
+		return
+	}
+	if !webcam.IsOpened() {
+		return
+	}
+}
+
+func HandleStream(writer http.ResponseWriter, request *http.Request) {
+	writer.Header().Set("Content-Type", "multipart/x-mixed-replace; boundary=frame")
+	if !webcam.IsOpened() {
+		return
+	}
+	img := gocv.NewMat()
+	defer img.Close()
+	for {
+		if ok := webcam.Read(&img); !ok || img.Empty() {
+			return
+		}
+		buf, err := gocv.IMEncode(".jpg", img)
+		if err != nil {
+			continue
+		}
+		writer.Header().Set("Content-Length", strconv.Itoa(buf.Len()))
+		writer.Write(buf.GetBytes())
+		writer.(http.Flusher).Flush()
+	}
 }
 
 func checkErr(err error) {
