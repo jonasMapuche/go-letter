@@ -13,6 +13,7 @@ import (
 	"letter.go/brand"
 	"letter.go/grammar"
 	"letter.go/logic"
+	"letter.go/stream"
 )
 
 type Color struct {
@@ -61,7 +62,7 @@ const (
 	LOCAL         = "Production"
 )
 
-func Controller(arbor grammar.Arbor, dome brand.Arbor) *http.ServeMux {
+func Controller(arbor grammar.Arbor, dome brand.Arbor, webcam *gocv.VideoCapture) *http.ServeMux {
 
 	mux := http.NewServeMux()
 
@@ -179,7 +180,7 @@ func Controller(arbor grammar.Arbor, dome brand.Arbor) *http.ServeMux {
 		case "/Stream":
 			switch request.Method {
 			case "GET":
-				HandleStream(writer, request)
+				HandleStream(writer, request, webcam)
 			}
 		default:
 			http.NotFound(writer, request)
@@ -567,39 +568,18 @@ func HandleSyntax(writer http.ResponseWriter, request *http.Request, arbor gramm
 	writer.Write([]byte(responseJSON))
 }
 
-var (
-	webcam *gocv.VideoCapture
-	err    error
-)
-
-func Video() {
-	deviceID := 1
-	webcam, err = gocv.VideoCaptureDevice(deviceID)
-	if err != nil {
-		return
-	}
-	if !webcam.IsOpened() {
-		return
-	}
-}
-
-func HandleStream(writer http.ResponseWriter, request *http.Request) {
+func HandleStream(writer http.ResponseWriter, request *http.Request, webcam *gocv.VideoCapture) {
 	writer.Header().Set("Content-Type", "multipart/x-mixed-replace; boundary=frame")
 	if !webcam.IsOpened() {
 		return
 	}
-	img := gocv.NewMat()
-	defer img.Close()
+	var image gocv.Mat = gocv.NewMat()
+	defer image.Close()
 	for {
-		if ok := webcam.Read(&img); !ok || img.Empty() {
-			return
-		}
-		buf, err := gocv.IMEncode(".jpg", img)
-		if err != nil {
-			continue
-		}
-		writer.Header().Set("Content-Length", strconv.Itoa(buf.Len()))
-		writer.Write(buf.GetBytes())
+		var buffer *gocv.NativeByteBuffer
+		buffer = stream.Read(webcam, image)
+		writer.Header().Set("Content-Length", strconv.Itoa(buffer.Len()))
+		writer.Write(buffer.GetBytes())
 		writer.(http.Flusher).Flush()
 	}
 }

@@ -2,6 +2,7 @@ package grammar
 
 import (
 	"regexp"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -100,8 +101,8 @@ type Interpret struct {
 }
 
 type Glossary struct {
-	First  Word
-	Second Word
+	First  Talk
+	Second Talk
 	Order  int
 }
 
@@ -158,6 +159,15 @@ const (
 	PREDICATIVE   = "predicativo"
 	DIRECT        = "objeto direto"
 	INDIRECT      = "objeto indireto"
+	BOTH          = "ambos"
+	COMMA         = ","
+	COLON         = ":"
+	SEMICOLON     = ";"
+	SPOT          = "."
+	APPOSITIVE    = "aposto"
+	ENUMERATIVE   = "enumerativo"
+	CONNECTIVE    = "conectivo"
+	RATE          = 2
 )
 
 func GetVerb(word []Word) bool {
@@ -329,26 +339,6 @@ func PrepositionVerb(term string) bool {
 	return false
 }
 
-func SecondVerb(term string, unit []Word) bool {
-	var vocable []string = strings.Split(term, " ")
-	if len(vocable) == 1 {
-		if GetVerb(unit) {
-			return true
-		} else {
-			return false
-		}
-	}
-	return false
-}
-
-func DoubleVerb(term string) bool {
-	var vocable []string = strings.Split(term, " ")
-	if len(vocable) > 1 {
-		return true
-	}
-	return false
-}
-
 func AdjunctVerb(word string, arbor Arbor, language string) bool {
 	var term string = word
 	for _, value := range arbor.Verb {
@@ -386,45 +376,102 @@ func Snap(message string, arbor Arbor, language string) []Phrase {
 	errand = strings.ReplaceAll(errand, ":", " : ")
 	errand = strings.ReplaceAll(errand, ";", " ; ")
 	errand = strings.ReplaceAll(errand, "\"", " \" ")
-
-	var word []string = strings.Split(errand, " ")
-	var vocable []string
-	for _, term := range word {
+	var words []string = strings.Split(errand, " ")
+	var vocables []string
+	for _, term := range words {
 		if term != "" {
-			vocable = append(vocable, term)
+			vocables = append(vocables, term)
 		}
 	}
 	if language == ENGLISH {
-		vocable = SplitEnglish(vocable, arbor, language)
+		vocables = SplitEnglish(vocables, arbor, language)
 	}
-	var unit []Word
-	var phrase []Phrase
-	var predicate bool = false
-	for _, term := range vocable {
+	var units []Word
+	var phrases []Phrase
+	var predicates bool = false
+	for _, term := range vocables {
 		var spell Word
 		spell.Term = term
 		spell.Class = ""
 		spell.Sentence = ""
-		unit = append(unit, spell)
+		units = append(units, spell)
 		if GetSpesh(spell.Term) {
 			if GetBefore(spell.Term) {
 				continue
 			}
-			if TypeEspecial(spell.Term) {
-				predicate = true
-			}
-			var locution []Word = Slash(unit, arbor, language, predicate)
-			var kind string = Type(spell.Term)
-
+			var locution []Word = Slash(units, arbor, language, predicates)
+			var kind string = TypePhrase(spell.Term)
 			var clause Phrase = Phrase{
 				Kind: kind,
 				Word: locution,
 			}
-			phrase = append(phrase, clause)
-			unit = nil
+			phrases = append(phrases, clause)
+			units = nil
+			if TypeEspecial(spell.Term) {
+				predicates = true
+			}
 		}
 	}
-	return phrase
+	var expressions []Phrase = ChangeAnbuguity(phrases, arbor, language)
+	return expressions
+}
+
+func ChangeAnbuguity(phrases []Phrase, arbor Arbor, language string) []Phrase {
+	var rate int = RATE
+	var predicates []Glossary = Oration(phrases, PREDICATE, rate)
+	var verbs []Glossary
+	for _, predicate := range predicates {
+		for _, etiology := range predicate.First.Etiology {
+			if etiology == VERB {
+				var verb Glossary = predicate
+				verbs = append(verbs, verb)
+			}
+		}
+	}
+	var actions []Talk
+	for _, verb := range verbs {
+		for _, noun := range arbor.Noun {
+			var term string = SplitNoun(noun.Name)
+			if verb.First.Term == term && noun.Language == language && verb.Order == -1 {
+				var word Talk = verb.Second
+				for _, etiology := range word.Etiology {
+					if etiology == ADJECTIVE || etiology == PRONOUN || etiology == NUMERAL {
+						var talk Talk
+						talk.Term = verb.First.Term
+						talk.Etiology = append(talk.Etiology, NOUN)
+						talk.Pattern = verb.First.Pattern
+						talk.Order = verb.First.Order
+						actions = append(actions, talk)
+					}
+				}
+			}
+		}
+	}
+	var expressions []Phrase
+	var ratio int = 1
+	for _, phrase := range phrases {
+		var terms []Word
+		for mark, word := range phrase.Word {
+			terms = append(terms, word)
+			for _, action := range actions {
+				if action.Order == ratio {
+					var discussion Word
+					discussion.Term = action.Term
+					discussion.Class = action.Etiology[0]
+					discussion.Sentence = action.Pattern[0]
+					terms[mark] = discussion
+					break
+				}
+			}
+			ratio++
+		}
+		var diction Phrase = Phrase{
+			Kind: phrase.Kind,
+			Word: terms,
+		}
+		expressions = append(expressions, diction)
+	}
+	return expressions
 }
 
 func Slash(word []Word, arbor Arbor, language string, predicate bool) []Word {
@@ -451,22 +498,15 @@ func Slash(word []Word, arbor Arbor, language string, predicate bool) []Word {
 		for _, value := range arbor.Verb {
 			var term string = spell.Term
 			var preposition bool = false
-			var second bool = false
-			var double bool = false
 			if language == ENGLISH {
 				preposition = PrepositionVerb(spell.Term)
 				if preposition {
 					term = SplitVerb(spell.Term)
-				} else {
-					second = SecondVerb(term, unit)
-					double = DoubleVerb(term)
 				}
 			}
 			if value.Name == strings.ToLower(term) && value.Language == language && spell.Sentence == "" {
-				if preposition || !second || double {
-					spell.Class = VERB
-					spell.Sentence = PREDICATE
-				}
+				spell.Class = VERB
+				spell.Sentence = PREDICATE
 			}
 		}
 		for _, value := range arbor.Noun {
@@ -816,7 +856,7 @@ func Split(message string, arbor Arbor, language string) Phrase {
 		unit = append(unit, spell)
 	}
 
-	var class string = Type(message)
+	var class string = TypePhrase(message)
 
 	locution := Phrase{
 		Kind: class,
@@ -826,7 +866,7 @@ func Split(message string, arbor Arbor, language string) Phrase {
 	return locution
 }
 
-func Type(message string) string {
+func TypePhrase(message string) string {
 	var class string = INCONSISTENT
 	if strings.Contains(message, ".") ||
 		strings.Contains(message, ":") ||
@@ -910,36 +950,37 @@ func Agree(phrase Phrase) Phrase {
 
 }
 
-func OrderFirst(glossaries []Glossary, word Word) int {
+func OrderFirst(glossaries []Glossary) int {
 	var minus int = 0
-	for _, noun := range glossaries {
-		if noun.First == word {
-			var num = noun.Order
-			if num < minus {
-				minus = num
-			}
+	for index, noun := range glossaries {
+		if index == 0 {
+			minus = noun.First.Order
+		}
+		var num = noun.First.Order
+		if num < minus {
+			minus = num
 		}
 	}
 	return minus
 }
 
-func OrderLast(glossaries []Glossary, word Word) int {
+func OrderLast(glossaries []Glossary) int {
 	var maximus int = 0
 	for _, noun := range glossaries {
-		if noun.First == word {
-			var max = noun.Order
-			if max > maximus {
-				maximus = max
-			}
+		var max = noun.First.Order
+		if max > maximus {
+			maximus = max
 		}
 	}
 	return maximus
 }
 
-func FilterGlossary(glossaries []Glossary, word Word) []Glossary {
+func FilterGlossary(glossaries []Glossary, word Talk) []Glossary {
 	var lexicons []Glossary
 	for _, glossary := range glossaries {
-		if glossary.First == word {
+		if slices.Equal(glossary.First.Etiology, word.Etiology) &&
+			slices.Equal(glossary.First.Pattern, word.Pattern) &&
+			glossary.First.Term == word.Term && glossary.First.Order == word.Order {
 			var lexicon Glossary
 			lexicon.First = glossary.First
 			lexicon.Second = glossary.Second
@@ -950,49 +991,71 @@ func FilterGlossary(glossaries []Glossary, word Word) []Glossary {
 	return lexicons
 }
 
-func MountVocabulary(glossaries []Glossary, crescent bool) []Vocabulary {
+func MountVocabulary(glossaries []Glossary, crescent bool, rear bool) []Vocabulary {
 	if glossaries == nil {
 		return nil
 	}
 	sort.Slice(glossaries, func(i, j int) bool {
-		return glossaries[i].First.Term < glossaries[j].First.Term
+		if glossaries[i].First.Term != glossaries[j].First.Term {
+			return glossaries[i].First.Term < glossaries[j].First.Term
+		}
+		return glossaries[i].First.Order < glossaries[j].First.Order
 	})
 	var vocabularies []Vocabulary
 	var before string = ""
+	var order int = 0
 	var vocabulary Vocabulary
 	for _, association := range glossaries {
-		if association.Order <= 0 {
-			if before == "" {
+		if !(rear && association.Order <= 0) {
+			if !(!rear && association.Order >= 0) {
+				continue
+			}
+		}
+		if before == "" {
+			vocabulary.Jargon = append(vocabulary.Jargon, association)
+			before = association.First.Term
+			order = association.First.Order
+		} else {
+			if !(before == association.First.Term && order == association.First.Order) {
+				if crescent {
+					sort.Slice(vocabulary.Jargon, func(i, j int) bool {
+						if vocabulary.Jargon[i].First.Term != vocabulary.Jargon[j].First.Term {
+							return vocabulary.Jargon[i].First.Term < vocabulary.Jargon[j].First.Term
+						}
+						return vocabulary.Jargon[i].First.Order < vocabulary.Jargon[j].First.Order
+					})
+				} else {
+					sort.Slice(vocabulary.Jargon, func(i, j int) bool {
+						if vocabulary.Jargon[i].First.Term != vocabulary.Jargon[j].First.Term {
+							return vocabulary.Jargon[i].First.Term > vocabulary.Jargon[j].First.Term
+						}
+						return vocabulary.Jargon[i].First.Order > vocabulary.Jargon[j].First.Order
+					})
+				}
+				vocabularies = append(vocabularies, vocabulary)
+				vocabulary.Jargon = nil
 				vocabulary.Jargon = append(vocabulary.Jargon, association)
 				before = association.First.Term
+				order = association.First.Order
 			} else {
-				if before != association.First.Term {
-					if crescent {
-						sort.Slice(vocabulary.Jargon, func(i, j int) bool {
-							return vocabulary.Jargon[i].Order > vocabulary.Jargon[j].Order
-						})
-					} else {
-						sort.Slice(vocabulary.Jargon, func(i, j int) bool {
-							return vocabulary.Jargon[i].Order < vocabulary.Jargon[j].Order
-						})
-					}
-					vocabularies = append(vocabularies, vocabulary)
-					vocabulary.Jargon = nil
-					before = association.First.Term
-				} else {
-					vocabulary.Jargon = append(vocabulary.Jargon, association)
-				}
+				vocabulary.Jargon = append(vocabulary.Jargon, association)
 			}
 		}
 	}
 	if vocabulary.Jargon != nil {
 		if crescent {
 			sort.Slice(vocabulary.Jargon, func(i, j int) bool {
-				return vocabulary.Jargon[i].Order > vocabulary.Jargon[j].Order
+				if vocabulary.Jargon[i].First.Term != vocabulary.Jargon[j].First.Term {
+					return vocabulary.Jargon[i].First.Term < vocabulary.Jargon[j].First.Term
+				}
+				return vocabulary.Jargon[i].First.Order < vocabulary.Jargon[j].First.Order
 			})
 		} else {
 			sort.Slice(vocabulary.Jargon, func(i, j int) bool {
-				return vocabulary.Jargon[i].Order < vocabulary.Jargon[j].Order
+				if vocabulary.Jargon[i].First.Term != vocabulary.Jargon[j].First.Term {
+					return vocabulary.Jargon[i].First.Term > vocabulary.Jargon[j].First.Term
+				}
+				return vocabulary.Jargon[i].First.Order > vocabulary.Jargon[j].First.Order
 			})
 		}
 		vocabularies = append(vocabularies, vocabulary)
@@ -1000,16 +1063,16 @@ func MountVocabulary(glossaries []Glossary, crescent bool) []Vocabulary {
 	return vocabularies
 }
 
-func MountPreposition(noun Word, prepositions []Glossary) []Word {
-	var link Word
+func MountPreposition(noun Talk, prepositions []Glossary) []Talk {
+	var link Talk
 	for _, preposition := range prepositions {
 		if preposition.Order == 0 {
-			if preposition.Second == noun {
+			if CompareTalk(preposition.Second, noun) {
 				link = preposition.First
 			}
 		}
 	}
-	var terms []Word
+	var terms []Talk
 	if link.Term != "" {
 		terms = append(terms, link)
 		terms = append(terms, noun)
@@ -1019,76 +1082,269 @@ func MountPreposition(noun Word, prepositions []Glossary) []Word {
 	return terms
 }
 
-func MountNoun(nouns []Glossary, prepositions []Glossary) []Talk {
+func TypeEspecial(value string) bool {
+	if value == COMMA || value == SEMICOLON || value == COLON {
+		return true
+	}
+	return false
+}
+
+func TypeConnection(vocabularies []Vocabulary) Talk {
+	var connection Talk
+	for _, vocabulary := range vocabularies {
+		for _, jargon := range vocabulary.Jargon {
+			if jargon.Order == 0 {
+				connection = jargon.First
+			}
+		}
+	}
+	return connection
+}
+
+func TypeCore(talk Talk) string {
+	var kind string = NOUN
+	for _, brand := range talk.Etiology {
+		if brand == PRONOUN {
+			kind = PRONOUN
+		}
+	}
+	return kind
+}
+
+func KindConnection(vocabularies []Vocabulary) Talk {
+	var kind Talk
+	for _, vocabulary := range vocabularies {
+		for _, jargon := range vocabulary.Jargon {
+			if jargon.Order == -1 {
+				kind = jargon.Second
+			}
+		}
+	}
+	return kind
+}
+
+func TypePronoun(pronouns []Glossary) string {
+	var pronoun string = ""
+	var kinds []string
+	var vocabularies []Vocabulary = MountVocabulary(pronouns, true, false)
+	for _, vocabulary := range vocabularies {
+		var lexicons []Glossary = vocabulary.Jargon
+		for _, lexicon := range lexicons {
+			if lexicon.Order == 0 {
+				var brand bool = false
+				for _, etiology := range lexicon.Second.Etiology {
+					if etiology == NOUN {
+						kinds = append(kinds, ADJECTIVE)
+						brand = true
+					}
+				}
+				if !brand {
+					kinds = append(kinds, PRONOUN)
+				}
+			}
+		}
+	}
+	var quantity int = 0
+	for _, brand := range kinds {
+		if brand == ADJECTIVE {
+			quantity++
+		}
+		if brand == PRONOUN {
+			quantity++
+		}
+	}
+	if quantity > 1 {
+		pronoun = BOTH
+	} else {
+		pronoun = kinds[0]
+	}
+	return pronoun
+}
+
+func SplitPronoun(glossaries []Glossary) []Glossary {
+	var pronouns []Glossary
+	var vocabularies []Vocabulary = MountVocabulary(glossaries, true, false)
+	for _, vocabulary := range vocabularies {
+		var lexicons []Glossary = vocabulary.Jargon
+		var kind string = TypePronoun(lexicons)
+		if kind == PRONOUN {
+			pronouns = append(pronouns, lexicons...)
+		}
+	}
+	return pronouns
+}
+
+func TypeAdjective(pronouns []Glossary) string {
+	var pronoun string = ""
+	var kinds []string
+	var vocabularies []Vocabulary = MountVocabulary(pronouns, true, true)
+	for _, vocabulary := range vocabularies {
+		var lexicons []Glossary = vocabulary.Jargon
+		for _, lexicon := range lexicons {
+			if lexicon.Order == 0 {
+				var brand bool = false
+				for _, etiology := range lexicon.Second.Etiology {
+					if etiology == NOUN || etiology == CONJUNCTION {
+						kinds = append(kinds, ADJECTIVE)
+						brand = true
+					}
+				}
+				if !brand {
+					kinds = append(kinds, ADVERBIAL)
+				}
+			}
+		}
+	}
+	var quantity int = 0
+	for _, brand := range kinds {
+		if brand == ADJECTIVE {
+			quantity++
+		}
+		if brand == ADVERBIAL {
+			quantity++
+		}
+	}
+	if quantity > 1 {
+		pronoun = BOTH
+	} else {
+		pronoun = kinds[0]
+	}
+	return pronoun
+}
+
+func SplitAdjective(glossaries []Glossary) []Glossary {
+	var adjectives []Glossary
+	var vocabularies []Vocabulary = MountVocabulary(glossaries, true, true)
+	for _, vocabulary := range vocabularies {
+		var lexicons []Glossary = vocabulary.Jargon
+		var kind = TypeAdjective(lexicons)
+		if kind == ADVERBIAL {
+			adjectives = append(adjectives, lexicons...)
+		}
+	}
+	return adjectives
+}
+
+func CompareTalk(first Talk, second Talk) bool {
+	var compare bool = false
+	if slices.Equal(first.Etiology, second.Etiology) &&
+		slices.Equal(first.Pattern, second.Pattern) &&
+		first.Term == second.Term &&
+		first.Order == second.Order {
+		return true
+	}
+	return compare
+}
+
+func MountCompound(noun Talk, prepositions []Glossary, integrant string) Recite {
+	var recipe Recite
+	var talk Talk
+	talk.Term = noun.Term
+	talk.Etiology = noun.Etiology
+	talk.Pattern = append(noun.Pattern, ADNOMINAL)
+	talk.Order = noun.Order
+	var link Talk
+	for _, preposition := range prepositions {
+		if preposition.Order == 0 {
+			if CompareTalk(preposition.Second, talk) {
+				link = preposition.First
+			}
+		}
+	}
+	var terms []Talk
+	if link.Term != "" && (integrant == INDIRECT || integrant == BOTH) {
+		terms = append(terms, link)
+		terms = append(terms, talk)
+		recipe.Kind = INDIRECT
+		recipe.Talk = terms
+	}
+	if link.Term == "" && (integrant == DIRECT || integrant == BOTH) {
+		terms = append(terms, talk)
+		recipe.Kind = DIRECT
+		recipe.Talk = terms
+	}
+	return recipe
+}
+
+func MountNoun(nouns []Glossary, prepositions []Glossary, integrant string) []Recite {
 	if nouns == nil {
 		return nil
 	}
-
-	var talks []Talk
-	var vocabularies = MountVocabulary(nouns, true)
+	var recipes []Recite
+	var vocabularies = MountVocabulary(nouns, true, true)
 	for _, vocabulary := range vocabularies {
 		var glossaries []Glossary = vocabulary.Jargon
-		var noun Word = glossaries[0].First
-		var article Word
-		var pronome Word
-		var numeral Word
-		var adverb Word
-		var adverb_adverb Word
-		var adjetivo Word
-		var preposition Word
-
-		var quantity int = len(glossaries)
-		var filters []Glossary
-		for count := 0; count < quantity; count++ {
-			if glossaries[count].Order <= 0 {
-				filters = append(filters, glossaries[count])
-			}
-		}
-		sort.Slice(filters, func(i, j int) bool {
-			return filters[i].Order > filters[j].Order
-		})
-		var size int = len(filters)
+		var noun Talk = glossaries[0].First
+		var article Talk
+		var pronome Talk
+		var numeral Talk
+		var adverb Talk
+		var adverb_adverb Talk
+		var adjetivo Talk
+		var preposition Talk
+		var size int = len(glossaries)
+		var exit bool = false
 		for count := 0; count < size; count++ {
-			var second Word = filters[count].Second
-			var order int = filters[count].Order
-
-			var terms []Word = MountPreposition(second, prepositions)
+			var second Talk = glossaries[count].Second
+			var order int = glossaries[count].Order
+			var terms []Talk = MountPreposition(second, prepositions)
 			var lenght = len(terms)
 			if lenght > 1 {
 				preposition = terms[0]
 			}
-
-			if second.Class == NOUN && order != 0 {
-				break
-			}
-			if second.Class == VERB && order != 0 {
-				break
-			}
-			if second.Class == CONJUNCTION && order != 0 {
-				break
-			}
-			if second.Class == ARTICLE && order != 0 {
-				article = second
-				break
-			}
-			if second.Class == ADVERB {
-				adverb = second
-			}
-			if second.Class == ADVERB && adverb.Term != "" {
-				adverb_adverb = second
-			}
-			if second.Class == ADJECTIVE {
-				adjetivo = second
-			}
-			if second.Class == NUMERAL {
-				numeral = second
-			}
-			if second.Class == PRONOUN {
-				pronome = second
+			var kind string = TypeCore(noun)
+			if kind == NOUN {
+				for _, vocable := range second.Etiology {
+					if vocable == PREPOSITION && order != 0 {
+						exit = true
+						break
+					}
+					if vocable == NOUN && order != 0 {
+						exit = true
+						break
+					}
+					if vocable == VERB && order != 0 {
+						exit = true
+						break
+					}
+					if vocable == CONJUNCTION && order != 0 {
+						exit = true
+						break
+					}
+					if vocable == ARTICLE && order != 0 {
+						article = second
+						exit = true
+						break
+					}
+					if vocable == ADVERB && order != 0 {
+						adverb = second
+					}
+					if vocable == ADVERB && adverb.Term != "" && order != 0 {
+						adverb_adverb = second
+					}
+					if vocable == ADJECTIVE && order != 0 {
+						adjetivo = second
+					}
+					if vocable == NUMERAL && order != 0 {
+						numeral = second
+					}
+					if vocable == PRONOUN && order != 0 {
+						pronome = second
+					}
+				}
+				if exit {
+					break
+				}
 			}
 		}
-
-		var words []Word
+		if preposition.Term == "" {
+			var vocables []Talk = MountPreposition(noun, prepositions)
+			var lenght = len(vocables)
+			if lenght > 1 {
+				preposition = vocables[0]
+			}
+		}
+		var words []Talk
 		if preposition.Term != "" {
 			words = append(words, preposition)
 		}
@@ -1113,75 +1369,76 @@ func MountNoun(nouns []Glossary, prepositions []Glossary) []Talk {
 		if noun.Term != "" {
 			words = append(words, noun)
 		}
-
-		for _, word := range words {
-			var talk Talk
-			talk.Term = word.Term
-			talk.Etiology = append(talk.Etiology, word.Class)
-			talk.Pattern = append(talk.Pattern, word.Sentence)
-			talk.Pattern = append(talk.Pattern, ADNOMINAL)
-			if word.Sentence == PREDICATE {
-				if preposition.Term != "" {
-					talk.Pattern = append(talk.Pattern, INDIRECT)
-				} else {
-					talk.Pattern = append(talk.Pattern, DIRECT)
-				}
+		if integrant == BOTH ||
+			(integrant == DIRECT && preposition.Term == "") ||
+			(integrant == INDIRECT && preposition.Term != "") {
+			var talks []Talk
+			for _, word := range words {
+				var talk Talk
+				talk.Term = word.Term
+				talk.Etiology = append(talk.Etiology, word.Etiology...)
+				talk.Pattern = append(talk.Pattern, word.Pattern...)
+				talk.Pattern = append(talk.Pattern, ADNOMINAL)
+				talk.Order = word.Order
+				talks = append(talks, talk)
 			}
-			talks = append(talks, talk)
+			var recipe = Recite{
+				Kind: integrant,
+				Talk: talks,
+			}
+			recipes = append(recipes, recipe)
 		}
 	}
-	return talks
+	return recipes
 }
 
-func MountVerb(verbs []Glossary) []Talk {
+func MountVerb(verbs []Glossary) []Recite {
 	if verbs == nil {
 		return nil
 	}
-
-	var talks []Talk
-	var vocabularies = MountVocabulary(verbs, true)
+	var recites []Recite
+	var vocabularies = MountVocabulary(verbs, true, false)
 	for _, vocabulary := range vocabularies {
 		var glossaries []Glossary = vocabulary.Jargon
-		var verb Word = glossaries[0].First
-		var adverb Word
-		var adverb_adverb Word
-
-		var quantity int = len(glossaries)
-		var filters []Glossary
-		for count := 0; count < quantity; count++ {
-			if glossaries[count].Order >= 0 {
-				filters = append(filters, glossaries[count])
-			}
-		}
-		sort.Slice(filters, func(i, j int) bool {
-			return filters[i].Order < filters[j].Order
-		})
-		var size int = len(filters)
+		var verb Talk = glossaries[0].First
+		var adverb Talk
+		var adverb_adverb Talk
+		var size int = len(glossaries)
+		var exit bool = false
 		for count := 0; count < size; count++ {
-			var second Word = filters[count].Second
-			var order int = filters[count].Order
-			if second.Class == NOUN {
-				break
+			var second Talk = glossaries[count].Second
+			var order int = glossaries[count].Order
+			for _, vocable := range second.Etiology {
+				if vocable == NOUN {
+					exit = true
+					break
+				}
+				if vocable == NUMERAL {
+					exit = true
+					break
+				}
+				if vocable == ADJECTIVE {
+					exit = true
+					break
+				}
+				if vocable == VERB && order != 0 {
+					exit = true
+					break
+				}
+				if vocable == ADVERB && adverb.Term != "" {
+					adverb_adverb = second
+					exit = true
+					break
+				}
+				if vocable == ADVERB {
+					adverb = second
+				}
 			}
-			if second.Class == NUMERAL {
+			if exit {
 				break
-			}
-			if second.Class == ADJECTIVE {
-				break
-			}
-			if second.Class == VERB && order != 0 {
-				break
-			}
-			if second.Class == ADVERB && adverb.Term != "" {
-				adverb_adverb = second
-				break
-			}
-			if second.Class == ADVERB {
-				adverb = second
 			}
 		}
-
-		var words []Word
+		var words []Talk
 		if adverb.Term != "" {
 			words = append(words, adverb)
 		}
@@ -1191,41 +1448,116 @@ func MountVerb(verbs []Glossary) []Talk {
 		if verb.Term != "" {
 			words = append(words, verb)
 		}
-
+		var talks []Talk
 		for _, word := range words {
 			var talk Talk
 			talk.Term = word.Term
-			talk.Etiology = append(talk.Etiology, word.Class)
-			talk.Pattern = append(talk.Pattern, word.Sentence)
+			talk.Etiology = append(talk.Etiology, word.Etiology...)
+			talk.Pattern = append(talk.Pattern, word.Pattern...)
 			talk.Pattern = append(talk.Pattern, ADVERBIAL)
+			talk.Order = word.Order
 			talks = append(talks, talk)
 		}
+		var recipe Recite = Recite{
+			Kind: VERB,
+			Talk: talks,
+		}
+		recites = append(recites, recipe)
 	}
-	return talks
+	return recites
 }
 
-func MountAdverb(glossaries []Glossary, adverbs []Glossary) []Talk {
+func MountAdjective(adjectives []Glossary) []Recite {
+	if adjectives == nil {
+		return nil
+	}
+	var recipes []Recite
+	var vocabularies = MountVocabulary(adjectives, true, true)
+	for _, vocabulary := range vocabularies {
+		var glossaries []Glossary = vocabulary.Jargon
+		var adjective Talk = glossaries[0].First
+		var adverb Talk
+		var adverb_adverb Talk
+		var size int = len(glossaries)
+		var exit bool = false
+		for count := 0; count < size; count++ {
+			var second Talk = glossaries[count].Second
+			for _, vocable := range second.Etiology {
+				if vocable == ADJECTIVE {
+					exit = true
+					break
+				}
+				if vocable == NOUN {
+					exit = true
+					break
+				}
+				if vocable == VERB {
+					exit = true
+					break
+				}
+				if vocable == ADVERB && adverb.Term != "" {
+					adverb_adverb = second
+					exit = true
+					break
+				}
+				if vocable == ADVERB {
+					adverb = second
+				}
+			}
+			if exit {
+				break
+			}
+		}
+		var words []Talk
+		if adverb.Term != "" {
+			words = append(words, adverb)
+		}
+		if adverb_adverb.Term != "" {
+			words = append(words, adverb_adverb)
+		}
+		if adjective.Term != "" {
+			words = append(words, adjective)
+		}
+		var talks []Talk
+		for _, word := range words {
+			var talk Talk
+			talk.Term = word.Term
+			talk.Etiology = append(talk.Etiology, word.Etiology...)
+			talk.Pattern = append(talk.Pattern, word.Pattern...)
+			talk.Pattern = append(talk.Pattern, ADVERBIAL)
+			talk.Order = word.Order
+			talks = append(talks, talk)
+		}
+		var recipe = Recite{
+			Kind: PREDICATIVE,
+			Talk: talks,
+		}
+		recipes = append(recipes, recipe)
+	}
+	return recipes
+}
+
+func MountAdverb(glossaries []Glossary, adverbs []Glossary) []Recite {
 	if glossaries == nil {
 		return nil
 	}
-
-	var filter Word
+	var filter Talk
 	for _, adverb := range adverbs {
-		if adverb.Second.Class == ADJECTIVE {
-			filter = adverb.Second
-			break
+		for _, term := range adverb.Second.Etiology {
+			if term == ADJECTIVE {
+				filter = adverb.Second
+				break
+			}
 		}
 	}
 	var adjectives []Glossary = FilterGlossary(glossaries, filter)
-
-	var talks []Talk
-	var vocabularies = MountVocabulary(adjectives, true)
+	var recipes []Recite
+	var vocabularies = MountVocabulary(adjectives, true, false)
 	for _, vocabulary := range vocabularies {
 		var glossaries []Glossary = vocabulary.Jargon
-		var adjective Word = glossaries[0].First
-		var adverb Word
-		var adverb_adverb Word
-
+		var adjective Talk = glossaries[0].First
+		var adverb Talk
+		var adverb_adverb Talk
 		var quantity int = len(glossaries)
 		var filters []Glossary
 		for count := 0; count < quantity; count++ {
@@ -1237,33 +1569,44 @@ func MountAdverb(glossaries []Glossary, adverbs []Glossary) []Talk {
 			return filters[i].Order < filters[j].Order
 		})
 		var size int = len(filters)
+		var exit bool = false
 		for count := 0; count < size; count++ {
-			var second Word = filters[count].Second
-			if second.Class == ADJECTIVE {
-				break
+			var second Talk = filters[count].Second
+			for _, vocable := range second.Etiology {
+				if vocable == ADJECTIVE {
+					exit = true
+					break
+				}
+				if vocable == NOUN {
+					exit = true
+					break
+				}
+				if vocable == VERB {
+					exit = true
+					break
+				}
+				if vocable == NUMERAL {
+					exit = true
+					break
+				}
+				if vocable == ARTICLE {
+					exit = true
+					break
+				}
+				if vocable == ADVERB && adverb.Term != "" {
+					adverb_adverb = second
+					exit = true
+					break
+				}
+				if vocable == ADVERB {
+					adverb = second
+				}
 			}
-			if second.Class == NOUN {
+			if exit {
 				break
-			}
-			if second.Class == VERB {
-				break
-			}
-			if second.Class == NUMERAL {
-				break
-			}
-			if second.Class == ARTICLE {
-				break
-			}
-			if second.Class == ADVERB && adverb.Term != "" {
-				adverb_adverb = second
-				break
-			}
-			if second.Class == ADVERB {
-				adverb = second
 			}
 		}
-
-		var words []Word
+		var words []Talk
 		if adverb.Term != "" {
 			words = append(words, adverb)
 		}
@@ -1273,78 +1616,87 @@ func MountAdverb(glossaries []Glossary, adverbs []Glossary) []Talk {
 		if adjective.Term != "" {
 			words = append(words, adjective)
 		}
-
+		var talks []Talk
 		for _, word := range words {
 			var talk Talk
 			talk.Term = word.Term
-			talk.Etiology = append(talk.Etiology, word.Class)
-			talk.Pattern = append(talk.Pattern, word.Sentence)
+			talk.Etiology = append(talk.Etiology, word.Etiology...)
+			talk.Pattern = append(talk.Pattern, word.Pattern...)
 			talk.Pattern = append(talk.Pattern, ADVERBIAL)
+			talk.Order = word.Order
 			talks = append(talks, talk)
 		}
+		var recipe = Recite{
+			Kind: DIRECT,
+			Talk: talks,
+		}
+		recipes = append(recipes, recipe)
 	}
-	return talks
-}
-
-func TypeEspecial(value string) bool {
-	if value == "," || value == ";" || value == ":" {
-		return true
-	}
-	return false
+	return recipes
 }
 
 func MountConnection(connections []Glossary, syntax string, dome brand.Arbor, language string) []Vocabulary {
 	var associations []Glossary
 	for _, association := range connections {
 		if syntax == SUBJECT {
-			if association.First.Class == CONJUNCTION {
-				var lexicon Glossary
-				lexicon.First = association.First
-				lexicon.Second = association.Second
-				lexicon.Order = association.Order
-				associations = append(associations, lexicon)
+			for _, term := range association.First.Etiology {
+				if term == CONJUNCTION {
+					var lexicon Glossary
+					lexicon.First = association.First
+					lexicon.Second = association.Second
+					lexicon.Order = association.Order
+					associations = append(associations, lexicon)
+				}
 			}
 		} else {
-			if association.First.Class == CONJUNCTION || TypeEspecial(association.First.Term) {
-				var lexicon Glossary
-				lexicon.First = association.First
-				lexicon.Second = association.Second
-				lexicon.Order = association.Order
-				associations = append(associations, lexicon)
+			for _, term := range association.First.Etiology {
+				if term == CONJUNCTION || TypeEspecial(association.First.Term) {
+					var lexicon Glossary
+					lexicon.First = association.First
+					lexicon.Second = association.Second
+					lexicon.Order = association.Order
+					associations = append(associations, lexicon)
+				}
 			}
-			if association.First.Class == PRONOUN {
-				for _, value := range dome.Pronoun {
-					if value.Name == strings.ToLower(association.First.Term) && value.Type == RELATIVE &&
-						value.Language == language {
-						var first Word
-						first.Sentence = association.First.Sentence
-						first.Term = association.First.Term
-						first.Class = RELATIVE
-						var lexicon Glossary
-						lexicon.First = first
-						lexicon.Second = association.Second
-						lexicon.Order = association.Order
-						associations = append(associations, lexicon)
-					}
-					if value.Name == strings.ToLower(association.First.Term) && value.Type == UNKNOW &&
-						value.Language == language {
-						var first Word
-						first.Sentence = association.First.Sentence
-						first.Term = association.First.Term
-						first.Class = UNKNOW
-						var lexicon Glossary
-						lexicon.First = first
-						lexicon.Second = association.Second
-						lexicon.Order = association.Order
-						associations = append(associations, lexicon)
+			for _, term := range association.First.Etiology {
+				if term == PRONOUN {
+					for _, value := range dome.Pronoun {
+						if value.Name == strings.ToLower(association.First.Term) && value.Type == RELATIVE &&
+							value.Language == language {
+							var first Talk
+							first.Pattern = association.First.Pattern
+							first.Etiology = association.First.Etiology
+							first.Etiology = append(first.Etiology, RELATIVE)
+							first.Term = association.First.Term
+							first.Order = association.First.Order
+							var lexicon Glossary
+							lexicon.First = first
+							lexicon.Second = association.Second
+							lexicon.Order = association.Order
+							associations = append(associations, lexicon)
+							break
+						}
+						if value.Name == strings.ToLower(association.First.Term) && value.Type == UNKNOW &&
+							value.Language == language {
+							var first Talk
+							first.Pattern = association.First.Pattern
+							first.Etiology = association.First.Etiology
+							first.Etiology = append(first.Etiology, UNKNOW)
+							first.Term = association.First.Term
+							first.Order = association.First.Order
+							var lexicon Glossary
+							lexicon.First = first
+							lexicon.Second = association.Second
+							lexicon.Order = association.Order
+							associations = append(associations, lexicon)
+							break
+						}
 					}
 				}
 			}
 		}
 	}
-
-	var vocabularies []Vocabulary = MountVocabulary(associations, true)
-
+	var vocabularies []Vocabulary = MountVocabulary(associations, true, true)
 	if vocabularies == nil {
 		return nil
 	}
@@ -1352,37 +1704,25 @@ func MountConnection(connections []Glossary, syntax string, dome brand.Arbor, la
 		return vocabularies
 	}
 	if syntax == PREDICATE {
-		var specials []Word
-		var before string = ""
-		for _, special := range connections {
-			if TypeEspecial(special.First.Term) {
-				if before == "" {
-					before = special.First.Term
-					specials = append(specials, special.First)
-				} else {
-					if before != special.First.Term {
-						specials = append(specials, special.First)
-						before = special.First.Term
-					} else {
-						specials = append(specials, special.First)
-					}
-				}
+		var specials []Glossary
+		for _, connection := range connections {
+			if TypeEspecial(connection.First.Term) {
+				var special Glossary
+				special.First = connection.First
+				special.Second = connection.Second
+				special.Order = connection.Order
+				specials = append(specials, special)
 			}
 		}
-		var prepositions []Word
-		var ahead string = ""
-		for _, preposition := range connections {
-			if preposition.First.Class == PREPOSITION {
-				if before == "" {
-					ahead = preposition.First.Term
-					prepositions = append(prepositions, preposition.First)
-				} else {
-					if ahead == preposition.First.Term {
-						prepositions = append(prepositions, preposition.First)
-						ahead = preposition.First.Term
-					} else {
-						prepositions = append(prepositions, preposition.First)
-					}
+		var prepositions []Glossary
+		for _, connection := range connections {
+			for _, term := range connection.First.Etiology {
+				if term == PREPOSITION {
+					var preposition Glossary
+					preposition.First = connection.First
+					preposition.Second = connection.Second
+					preposition.Order = connection.Order
+					prepositions = append(prepositions, preposition)
 				}
 			}
 		}
@@ -1393,47 +1733,35 @@ func MountConnection(connections []Glossary, syntax string, dome brand.Arbor, la
 			var contact bool = false
 			var sequence int = -1
 			for _, glossary := range vocabulary.Jargon {
-				if glossary.First.Class == CONJUNCTION {
-					for _, preposition := range prepositions {
-						if glossary.Order == sequence && glossary.Second == preposition {
-							var filters = FilterGlossary(connections, preposition)
-							dictionary.Jargon = append(dictionary.Jargon, filters...)
-							contact = true
-							break
-						}
-					}
-				}
-				if glossary.First.Class == UNKNOW {
-					for _, preposition := range prepositions {
-						if glossary.Order == sequence && glossary.Second == preposition {
-							var filters = FilterGlossary(connections, preposition)
-							dictionary.Jargon = append(dictionary.Jargon, filters...)
-							contact = true
-							break
-						}
-					}
-				}
-				if glossary.First.Class == RELATIVE {
-					for _, preposition := range prepositions {
-						if glossary.Order == sequence && glossary.Second == preposition {
-							var filters = FilterGlossary(connections, preposition)
-							dictionary.Jargon = append(dictionary.Jargon, filters...)
-							contact = true
-							break
+				for _, term := range glossary.First.Etiology {
+					if term == CONJUNCTION || term == UNKNOW || term == RELATIVE {
+						for _, preposition := range prepositions {
+							if glossary.Order == sequence && CompareTalk(glossary.Second, preposition.First) {
+								var filters = FilterGlossary(connections, preposition.First)
+								var dependences []Vocabulary = MountVocabulary(filters, true, true)
+								var bondages []Glossary = dependences[0].Jargon
+								dictionary.Jargon = append(dictionary.Jargon, bondages...)
+								contact = true
+								break
+							}
 						}
 					}
 				}
 			}
 			for _, glossary := range vocabulary.Jargon {
-				if glossary.First.Class == CONJUNCTION {
-					if contact == true {
-						sequence--
-					}
-					for _, special := range specials {
-						if glossary.Order == sequence && glossary.Second == special {
-							var filters = FilterGlossary(connections, special)
-							dictionary.Jargon = append(dictionary.Jargon, filters...)
-							break
+				for _, term := range glossary.First.Etiology {
+					if term == CONJUNCTION {
+						if contact == true {
+							sequence--
+						}
+						for _, special := range specials {
+							if glossary.Order == sequence && CompareTalk(glossary.Second, special.First) {
+								var filters = FilterGlossary(connections, special.First)
+								var dependences []Vocabulary = MountVocabulary(filters, true, true)
+								var bondages []Glossary = dependences[0].Jargon
+								dictionary.Jargon = append(dictionary.Jargon, bondages...)
+								break
+							}
 						}
 					}
 				}
@@ -1445,276 +1773,471 @@ func MountConnection(connections []Glossary, syntax string, dome brand.Arbor, la
 	return nil
 }
 
-func TypeSubject(nouns []Glossary, connections []Vocabulary) string {
-	if nouns == nil {
-		return MISSING
-	}
-	if connections != nil {
-		return COMPOUND
-	}
-	return SAMPLE
-}
-
-func NounCompound(terms []Word, connection Word, captions []Talk) []Talk {
+func NounCompound(connection Talk, captions []Recite, kind string) []Recite {
+	var recipes []Recite
 	var expressions []Talk
-	var lenght int = 0
-	if terms != nil {
-		lenght = len(terms)
-		for _, term := range terms {
-			var talk Talk
-			talk.Term = term.Term
-			talk.Etiology = append(talk.Etiology, term.Class)
-			talk.Pattern = append(talk.Pattern, term.Sentence)
-			talk.Pattern = append(talk.Pattern, ADNOMINAL)
-			if term.Sentence == PREDICATE {
-				if lenght > 1 {
-					talk.Pattern = append(talk.Pattern, INDIRECT)
-				} else {
-					talk.Pattern = append(talk.Pattern, DIRECT)
-				}
-			}
-			expressions = append(expressions, talk)
-		}
-	}
-	expressions = append(expressions, captions...)
-	var indirect bool = false
-	if lenght > 1 {
-		indirect = true
-	} else {
-		for _, caption := range captions[0].Pattern {
-			if caption == INDIRECT {
-				indirect = true
-			}
-		}
+	for _, caption := range captions {
+		expressions = append(expressions, caption.Talk...)
 	}
 	var preposition Talk
 	preposition.Term = connection.Term
-	preposition.Etiology = append(preposition.Etiology, connection.Class)
-	preposition.Pattern = append(preposition.Pattern, connection.Sentence)
+	preposition.Etiology = append(preposition.Etiology, connection.Etiology...)
+	preposition.Pattern = append(preposition.Pattern, connection.Pattern...)
 	preposition.Pattern = append(preposition.Pattern, ADNOMINAL)
-	if connection.Sentence == PREDICATE {
-		if indirect {
-			preposition.Pattern = append(preposition.Pattern, INDIRECT)
-		} else {
-			preposition.Pattern = append(preposition.Pattern, DIRECT)
-		}
-	}
+	preposition.Order = connection.Order
 	expressions = append(expressions, preposition)
-	return expressions
-}
-
-func MountAdjective(adjectives []Glossary) []Talk {
-	if adjectives == nil {
-		return nil
-	}
-	var adjective Word = adjectives[0].First
-	var adverb Word
-	var adverb_adverb Word
-
-	var quantity int = len(adjectives)
-	var filters []Glossary
-	for count := 0; count < quantity; count++ {
-		if adjectives[count].Order >= 0 {
-			filters = append(filters, adjectives[count])
-		}
-	}
-	sort.Slice(filters, func(i, j int) bool {
-		return filters[i].Order < filters[j].Order
+	sort.Slice(expressions, func(i, j int) bool {
+		return expressions[i].Order < expressions[j].Order
 	})
-	var size int = len(filters)
-	for count := 0; count < size; count++ {
-		var second Word = filters[count].Second
-		if second.Class == ADJECTIVE {
-			break
-		}
-		if second.Class == NOUN {
-			break
-		}
-		if second.Class == VERB {
-			break
-		}
-		if second.Class == ADVERB && adverb.Term != "" {
-			adverb_adverb = adjectives[count].Second
-			break
-		}
-		if second.Class == ADVERB {
-			adverb = adjectives[count].Second
-		}
+	var recipe = Recite{
+		Kind: kind,
+		Talk: expressions,
 	}
-
-	var words []Word
-	if adverb.Term != "" {
-		words = append(words, adverb)
-	}
-	if adverb_adverb.Term != "" {
-		words = append(words, adverb_adverb)
-	}
-	if adjective.Term != "" {
-		words = append(words, adjective)
-	}
-
-	var talks []Talk
-	for _, word := range words {
-		var talk Talk
-		talk.Term = word.Term
-		talk.Etiology = append(talk.Etiology, word.Class)
-		talk.Pattern = append(talk.Pattern, word.Sentence)
-		talk.Pattern = append(talk.Pattern, ADVERBIAL)
-		talks = append(talks, talk)
-	}
-	return talks
+	recipes = append(recipes, recipe)
+	return recipes
 }
 
-func TypePeriod(talks []Talk) string {
-	var quantity int = 0
-	for _, verb := range talks {
-		for _, word := range verb.Etiology {
-			if word == VERB {
-				quantity++
+func PeriodSample(glossaries []Glossary) []Recite {
+	var recites []Recite
+	var nouns []Glossary
+	for _, predicate := range glossaries {
+		for _, term := range predicate.First.Etiology {
+			if term == NOUN {
+				var noun Glossary
+				noun.First = predicate.First
+				noun.Second = predicate.Second
+				noun.Order = predicate.Order
+				nouns = append(nouns, noun)
 			}
 		}
 	}
-	var brand string = ""
-	if quantity > 1 {
-		brand = COMPOUND
-	} else {
-		brand = SAMPLE
-	}
-	return brand
-}
-
-func TypeConnection(vocabularies []Vocabulary) Word {
-	var connection Word
-	for _, vocabulary := range vocabularies {
-		for _, jargon := range vocabulary.Jargon {
-			if jargon.Order == 0 {
-				connection = jargon.First
+	var pronouns []Glossary
+	for _, predicate := range glossaries {
+		for _, term := range predicate.First.Etiology {
+			if term == PRONOUN {
+				var pronoun Glossary
+				pronoun.First = predicate.First
+				pronoun.Second = predicate.Second
+				pronoun.Order = predicate.Order
+				pronouns = append(pronouns, pronoun)
 			}
 		}
 	}
-	return connection
-}
-
-func KindConnection(vocabularies []Vocabulary) Word {
-	var kind Word
-	for _, vocabulary := range vocabularies {
-		for _, jargon := range vocabulary.Jargon {
-			if jargon.Order == -1 {
-				kind = jargon.Second
+	var adjectives []Glossary
+	for _, predicate := range glossaries {
+		for _, term := range predicate.First.Etiology {
+			if term == ADJECTIVE {
+				var adjective Glossary
+				adjective.First = predicate.First
+				adjective.Second = predicate.Second
+				adjective.Order = predicate.Order
+				adjectives = append(adjectives, adjective)
 			}
 		}
 	}
-	return kind
+	var prepositions []Glossary
+	for _, predicate := range glossaries {
+		for _, term := range predicate.First.Etiology {
+			if term == PREPOSITION {
+				var preposition Glossary
+				preposition.First = predicate.First
+				preposition.Second = predicate.Second
+				preposition.Order = predicate.Order
+				prepositions = append(prepositions, preposition)
+			}
+		}
+	}
+	var adverbials []Glossary = SplitAdjective(adjectives)
+	var qualities []Recite = MountAdjective(adverbials)
+	recites = append(recites, qualities...)
+	var surrogates []Glossary = SplitPronoun(pronouns)
+	nouns = append(nouns, surrogates...)
+	var directs []Recite = MountNoun(nouns, prepositions, DIRECT)
+	var indirects []Recite = MountNoun(nouns, prepositions, INDIRECT)
+	recites = append(recites, directs...)
+	recites = append(recites, indirects...)
+	return recites
+}
+
+func PeriodCompound(glossaries []Glossary, relations []Vocabulary) []Recite {
+	var recites []Recite
+	var nouns []Glossary
+	for _, predicate := range glossaries {
+		for _, term := range predicate.First.Etiology {
+			if term == NOUN {
+				var noun Glossary
+				noun.First = predicate.First
+				noun.Second = predicate.Second
+				noun.Order = predicate.Order
+				nouns = append(nouns, noun)
+			}
+		}
+	}
+	var pronouns []Glossary
+	for _, predicate := range glossaries {
+		for _, term := range predicate.First.Etiology {
+			if term == PRONOUN {
+				var pronoun Glossary
+				pronoun.First = predicate.First
+				pronoun.Second = predicate.Second
+				pronoun.Order = predicate.Order
+				pronouns = append(pronouns, pronoun)
+			}
+		}
+	}
+	var adjectives []Glossary
+	for _, predicate := range glossaries {
+		for _, term := range predicate.First.Etiology {
+			if term == ADJECTIVE {
+				var adjective Glossary
+				adjective.First = predicate.First
+				adjective.Second = predicate.Second
+				adjective.Order = predicate.Order
+				adjectives = append(adjectives, adjective)
+			}
+		}
+	}
+	var prepositions []Glossary
+	for _, predicate := range glossaries {
+		for _, term := range predicate.First.Etiology {
+			if term == PREPOSITION {
+				var preposition Glossary
+				preposition.First = predicate.First
+				preposition.Second = predicate.Second
+				preposition.Order = predicate.Order
+				prepositions = append(prepositions, preposition)
+			}
+		}
+	}
+	var adverbials []Glossary = SplitAdjective(adjectives)
+	var qualities []Recite = MountAdjective(adverbials)
+	recites = append(recites, qualities...)
+	var kind Talk = KindConnection(relations)
+	var connection Talk = TypeConnection(relations)
+	for _, vocable := range kind.Etiology {
+		if vocable == NUMERAL || vocable == ADJECTIVE || vocable == PRONOUN {
+			var directs []Recite = MountNoun(nouns, prepositions, DIRECT)
+			var indirects []Recite = MountNoun(nouns, prepositions, INDIRECT)
+			var compounds []Recite
+			if directs != nil {
+				var first Recite = MountCompound(kind, prepositions, DIRECT)
+				directs = append(directs, first)
+				compounds = NounCompound(connection, directs, DIRECT)
+			} else {
+				var first Recite = MountCompound(kind, prepositions, INDIRECT)
+				indirects = append(indirects, first)
+				compounds = NounCompound(connection, indirects, INDIRECT)
+			}
+			recites = append(recites, compounds...)
+		}
+		if vocable == NOUN {
+			var surrogates []Glossary = SplitPronoun(pronouns)
+			nouns = append(nouns, surrogates...)
+			var directs []Recite = MountNoun(nouns, prepositions, DIRECT)
+			var indirects []Recite = MountNoun(nouns, prepositions, INDIRECT)
+			var compounds []Recite
+			if directs != nil {
+				compounds = NounCompound(connection, directs, DIRECT)
+			} else {
+				compounds = NounCompound(connection, indirects, INDIRECT)
+			}
+			recites = append(recites, compounds...)
+		}
+	}
+	return recites
+}
+
+func NextPeriod(relations []Vocabulary, ratio int) Talk {
+	var talk Talk
+	for index, relation := range relations {
+		if index == ratio {
+			var connections []Glossary = relation.Jargon
+			var vocabularies []Vocabulary = MountVocabulary(connections, true, false)
+			for indicator, vocabulary := range vocabularies {
+				if indicator == 0 {
+					talk = vocabulary.Jargon[0].First
+				}
+			}
+		}
+	}
+	return talk
+}
+
+func MountRelation(vocabularies []Vocabulary) []Recite {
+	var recites []Recite
+	for _, relation := range vocabularies {
+		var connections []Glossary = relation.Jargon
+		var talks []Talk
+		for _, connection := range connections {
+			if connection.Order == 0 {
+				talks = append(talks, connection.First)
+			}
+		}
+		sort.Slice(talks, func(i, j int) bool {
+			return talks[i].Order < talks[j].Order
+		})
+		var recite = Recite{
+			Kind: CONNECTIVE,
+			Talk: talks,
+		}
+		recites = append(recites, recite)
+	}
+	return recites
+}
+
+func MountPeriod(glossaries []Glossary, relations []Vocabulary) []Recite {
+	var recites []Recite
+	var connectives = MountRelation(relations)
+	recites = append(recites, connectives...)
+	for index, relation := range relations {
+		var connections []Glossary = relation.Jargon
+		if index == 0 {
+			var first int = OrderFirst(connections)
+			var lexicons []Glossary
+			for _, glossary := range glossaries {
+				if glossary.First.Order < first {
+					lexicons = append(lexicons, glossary)
+				}
+			}
+			var declaims []Recite = PeriodSample(lexicons)
+			recites = append(recites, declaims...)
+		}
+		var initial int = OrderLast(connections)
+		var last Talk
+		var size int = len(relations)
+		if size > index+1 {
+			last = NextPeriod(relations, index+1)
+		}
+		var latest int = 0
+		if last.Term != "" {
+			latest = last.Order
+		}
+		var vocabulary []Glossary
+		if latest == 0 {
+			for _, glossary := range glossaries {
+				if glossary.First.Order > initial {
+					vocabulary = append(vocabulary, glossary)
+				}
+			}
+		} else {
+			for _, glossary := range glossaries {
+				if glossary.First.Order > initial && glossary.First.Order < latest {
+					vocabulary = append(vocabulary, glossary)
+				}
+			}
+		}
+		var declaims []Recite = PeriodSample(vocabulary)
+		recites = append(recites, declaims...)
+	}
+	return recites
 }
 
 func SyntaxSubject(orations []Phrase, dome brand.Arbor, language string, rate int) Recite {
 	var lexicons []Glossary = Oration(orations, SUBJECT, rate)
-
 	var nouns []Glossary
 	for _, subject := range lexicons {
-		if subject.First.Class == NOUN {
-			var noun Glossary
-			noun.First = subject.First
-			noun.Second = subject.Second
-			noun.Order = subject.Order
-			nouns = append(nouns, noun)
+		for _, term := range subject.First.Etiology {
+			if term == NOUN {
+				var noun Glossary
+				noun.First = subject.First
+				noun.Second = subject.Second
+				noun.Order = subject.Order
+				nouns = append(nouns, noun)
+			}
+		}
+	}
+	var pronouns []Glossary
+	for _, subject := range lexicons {
+		for _, term := range subject.First.Etiology {
+			if term == PRONOUN {
+				var pronoun Glossary
+				pronoun.First = subject.First
+				pronoun.Second = subject.Second
+				pronoun.Order = subject.Order
+				pronouns = append(pronouns, pronoun)
+			}
 		}
 	}
 	var prepositions []Glossary
-	for _, predicate := range lexicons {
-		if predicate.First.Class == PREPOSITION {
-			var preposition Glossary
-			preposition.First = predicate.First
-			preposition.Second = predicate.Second
-			preposition.Order = predicate.Order
-			prepositions = append(prepositions, preposition)
+	for _, subject := range lexicons {
+		for _, term := range subject.First.Etiology {
+			if term == PREPOSITION {
+				var preposition Glossary
+				preposition.First = subject.First
+				preposition.Second = subject.Second
+				preposition.Order = subject.Order
+				prepositions = append(prepositions, preposition)
+			}
 		}
 	}
-	var vocabularies []Vocabulary
-	vocabularies = MountConnection(lexicons, SUBJECT, dome, language)
-
-	var expressions []Talk
-	if vocabularies != nil {
-		var kind Word = KindConnection(vocabularies)
-		var terms []Word = MountPreposition(kind, prepositions)
-		var connection Word = TypeConnection(vocabularies)
-		if kind.Class == NUMERAL {
-			var captions []Talk = MountNoun(nouns, prepositions)
-			var compounds []Talk = NounCompound(terms, connection, captions)
-			expressions = append(expressions, compounds...)
-		}
-		if kind.Class == ADJECTIVE {
-			var captions []Talk = MountNoun(nouns, prepositions)
-			var compounds []Talk = NounCompound(terms, connection, captions)
-			expressions = append(expressions, compounds...)
-		}
-		if kind.Class == NOUN {
-			var captions []Talk = MountNoun(nouns, prepositions)
-			var compounds []Talk = NounCompound(nil, connection, captions)
-			expressions = append(expressions, compounds...)
-		}
-		if kind.Class == ADVERB {
-			var dictions []Glossary = FilterGlossary(lexicons, kind)
-			var adjectives []Talk = MountAdverb(lexicons, dictions)
-			var captions []Talk = MountNoun(nouns, prepositions)
-			adjectives = append(adjectives, captions...)
-			var compounds []Talk = NounCompound(terms, connection, adjectives)
-			expressions = append(expressions, compounds...)
+	var relations []Vocabulary
+	relations = MountConnection(lexicons, SUBJECT, dome, language)
+	var recite Recite
+	if relations != nil {
+		var kind Talk = KindConnection(relations)
+		var connection Talk = TypeConnection(relations)
+		for _, vocable := range kind.Etiology {
+			if vocable == NUMERAL || vocable == ADJECTIVE || vocable == PRONOUN {
+				var first Recite = MountCompound(kind, prepositions, BOTH)
+				var boths []Recite = MountNoun(nouns, prepositions, BOTH)
+				boths = append(boths, first)
+				var compounds []Recite = NounCompound(connection, boths, COMPOUND)
+				recite = compounds[0]
+			}
+			if vocable == NOUN {
+				var surrogates []Glossary = SplitPronoun(pronouns)
+				nouns = append(nouns, surrogates...)
+				var boths []Recite = MountNoun(nouns, prepositions, BOTH)
+				var compounds []Recite = NounCompound(connection, boths, COMPOUND)
+				recite = compounds[0]
+			}
 		}
 	} else {
-		var lexicons = MountNoun(nouns, prepositions)
-		expressions = append(expressions, lexicons...)
+		var surrogates []Glossary = SplitPronoun(pronouns)
+		nouns = append(nouns, surrogates...)
+		var boths []Recite = MountNoun(nouns, prepositions, BOTH)
+		if boths == nil {
+			recite.Kind = MISSING
+		} else {
+			for index, both := range boths {
+				if index == 0 {
+					recite.Kind = SAMPLE
+					recite.Talk = both.Talk
+				}
+			}
+		}
 	}
-
-	var brand string = TypeSubject(nouns, vocabularies)
-	var clause Recite = Recite{
-		Kind: brand,
-		Talk: expressions,
-	}
-	return clause
+	return recite
 }
 
-func SyntaxPredicate(orations []Phrase, dome brand.Arbor, language string, rate int) Recite {
-	var lexicons []Glossary = Oration(orations, PREDICATE, rate)
+func TypeAppositive(glossaries []Glossary) bool {
+	var appositive bool = false
+	for _, glossary := range glossaries {
+		if glossary.First.Term == COLON {
+			appositive = true
+		}
+	}
+	return appositive
+}
 
+func MountAppositive(glossaries []Glossary) []Recite {
+	var recites []Recite
+	var order int = 0
+	for _, glossary := range glossaries {
+		if glossary.First.Term == COLON {
+			order = glossary.First.Order
+		}
+	}
+	var predicates []Glossary
+	var appositives []Glossary
+	for _, glossary := range glossaries {
+		if glossary.First.Order < order {
+			predicates = append(predicates, glossary)
+		}
+		if glossary.First.Order > order {
+			appositives = append(appositives, glossary)
+		}
+	}
+	var captions []Recite = PeriodSample(predicates)
+	recites = append(recites, captions...)
+	var conjunctions []Glossary
+	for _, predicate := range appositives {
+		for _, term := range predicate.First.Etiology {
+			if term == CONJUNCTION {
+				var conjunction Glossary
+				conjunction.First = predicate.First
+				conjunction.Second = predicate.Second
+				conjunction.Order = predicate.Order
+				conjunctions = append(conjunctions, conjunction)
+			}
+		}
+	}
+	var specials []Glossary
+	for _, predicate := range appositives {
+		if predicate.First.Term == COMMA || predicate.First.Term == SPOT {
+			var special Glossary
+			special.First = predicate.First
+			special.Second = predicate.Second
+			special.Order = predicate.Order
+			specials = append(specials, special)
+		}
+	}
+	var connections []Glossary
+	connections = append(connections, conjunctions...)
+	connections = append(connections, specials...)
+	var talks []Talk
+	var contact Talk = conjunctions[0].First
+	for index, appositive := range appositives {
+		if appositive.Order == 0 {
+			var link bool = false
+			if index == 0 {
+				var special Talk
+				special.Term = contact.Term
+				special.Etiology = append(special.Etiology, contact.Etiology...)
+				special.Pattern = append(special.Pattern, contact.Pattern...)
+				special.Pattern = append(special.Pattern, APPOSITIVE)
+				special.Order = order
+				talks = append(talks, special)
+				var talk Talk
+				talk.Term = appositive.First.Term
+				talk.Etiology = append(talk.Etiology, appositive.First.Etiology...)
+				talk.Pattern = append(talk.Pattern, appositive.First.Pattern...)
+				talk.Pattern = append(talk.Pattern, APPOSITIVE)
+				talk.Order = appositive.First.Order
+				talks = append(talks, talk)
+				continue
+			}
+			for _, connection := range connections {
+				if CompareTalk(appositive.First, connection.First) {
+					var recipe = Recite{
+						Kind: ENUMERATIVE,
+						Talk: talks,
+					}
+					recites = append(recites, recipe)
+					var talk Talk
+					if appositive.First.Term == COMMA {
+						talk.Term = conjunctions[0].First.Term
+					} else {
+						talk.Term = appositive.First.Term
+					}
+					talk.Etiology = append(talk.Etiology, appositive.First.Etiology...)
+					talk.Pattern = append(talk.Pattern, appositive.First.Pattern...)
+					talk.Pattern = append(talk.Pattern, APPOSITIVE)
+					talk.Order = appositive.First.Order
+					talks = nil
+					talks = append(talks, talk)
+					link = true
+					break
+				}
+			}
+			if link {
+				continue
+			}
+			var talk Talk
+			talk.Term = appositive.First.Term
+			talk.Etiology = append(talk.Etiology, appositive.First.Etiology...)
+			talk.Pattern = append(talk.Pattern, appositive.First.Pattern...)
+			talk.Pattern = append(talk.Pattern, APPOSITIVE)
+			talk.Order = appositive.First.Order
+			talks = append(talks, talk)
+		}
+	}
+	return recites
+}
+
+func SyntaxPredicate(orations []Phrase, dome brand.Arbor, language string, rate int) []Recite {
+	var lexicons []Glossary = Oration(orations, PREDICATE, rate)
+	var recites []Recite
 	var verbs []Glossary
 	for _, predicate := range lexicons {
-		if predicate.First.Class == VERB {
-			var verb Glossary
-			verb.First = predicate.First
-			verb.Second = predicate.Second
-			verb.Order = predicate.Order
-			verbs = append(verbs, verb)
-		}
-	}
-	var nouns []Glossary
-	for _, predicate := range lexicons {
-		if predicate.First.Class == NOUN {
-			var noun Glossary
-			noun.First = predicate.First
-			noun.Second = predicate.Second
-			noun.Order = predicate.Order
-			nouns = append(nouns, noun)
-		}
-	}
-	var adjectives []Glossary
-	for _, predicate := range lexicons {
-		if predicate.First.Class == ADJECTIVE {
-			var adjective Glossary
-			adjective.First = predicate.First
-			adjective.Second = predicate.Second
-			adjective.Order = predicate.Order
-			adjectives = append(adjectives, adjective)
-		}
-	}
-	var prepositions []Glossary
-	for _, predicate := range lexicons {
-		if predicate.First.Class == PREPOSITION {
-			var preposition Glossary
-			preposition.First = predicate.First
-			preposition.Second = predicate.Second
-			preposition.Order = predicate.Order
-			prepositions = append(prepositions, preposition)
+		for _, term := range predicate.First.Etiology {
+			if term == VERB {
+				var verb Glossary
+				verb.First = predicate.First
+				verb.Second = predicate.Second
+				verb.Order = predicate.Order
+				verbs = append(verbs, verb)
+			}
 		}
 	}
 	var specials []Glossary
@@ -1727,136 +2250,101 @@ func SyntaxPredicate(orations []Phrase, dome brand.Arbor, language string, rate 
 			specials = append(specials, special)
 		}
 	}
-	var vocabularies []Vocabulary
-	vocabularies = MountConnection(lexicons, PREDICATE, dome, language)
-
-	var expressions []Talk
-	if vocabularies != nil {
-		var adverbial_verb []Talk = MountVerb(verbs)
-		expressions = append(expressions, adverbial_verb...)
-		var kind Word = KindConnection(vocabularies)
-		var terms []Word = MountPreposition(kind, prepositions)
-		var connection Word = TypeConnection(vocabularies)
-		if kind.Class == NUMERAL {
-			var captions []Talk = MountNoun(nouns, prepositions)
-			var compounds []Talk = NounCompound(terms, connection, captions)
-			expressions = append(expressions, compounds...)
-		}
-		if kind.Class == ADJECTIVE {
-			var captions []Talk = MountNoun(nouns, prepositions)
-			var compounds []Talk = NounCompound(terms, connection, captions)
-			expressions = append(expressions, compounds...)
-		}
-		if kind.Class == NOUN {
-			var captions []Talk = MountNoun(nouns, prepositions)
-			var compounds []Talk = NounCompound(nil, connection, captions)
-			expressions = append(expressions, compounds...)
-		}
-		if kind.Class == ADVERB {
-			var dictions []Glossary = FilterGlossary(lexicons, kind)
-			var adjectives []Talk = MountAdverb(lexicons, dictions)
-			var captions []Talk = MountNoun(nouns, prepositions)
-			adjectives = append(adjectives, captions...)
-			var compounds []Talk = NounCompound(terms, connection, adjectives)
-			expressions = append(expressions, compounds...)
-		}
+	var adverbials_verbs []Recite = MountVerb(verbs)
+	recites = append(recites, adverbials_verbs...)
+	var relations []Vocabulary
+	relations = MountConnection(lexicons, PREDICATE, dome, language)
+	var appositive bool = TypeAppositive(specials)
+	if appositive {
+		var declaim []Recite = MountAppositive(lexicons)
+		recites = append(recites, declaim...)
+		return recites
+	}
+	var fit int = len(adverbials_verbs)
+	if fit > 1 {
+		var declaim []Recite = MountPeriod(lexicons, relations)
+		recites = append(recites, declaim...)
+		return recites
+	}
+	if relations != nil {
+		var declaim []Recite = PeriodCompound(lexicons, relations)
+		recites = append(recites, declaim...)
 	} else {
-		var adverbial_verb []Talk = MountVerb(verbs)
-		expressions = append(expressions, adverbial_verb...)
-		var adnominal_adjunt []Talk = MountNoun(nouns, prepositions)
-		expressions = append(expressions, adnominal_adjunt...)
-		var adverbial_adjective []Talk = MountAdjective(adjectives)
-		expressions = append(expressions, adverbial_adjective...)
+		var declaim []Recite = PeriodSample(lexicons)
+		recites = append(recites, declaim...)
 	}
-
-	var brand string = TypePeriod(expressions)
-	var clause Recite = Recite{
-		Kind: brand,
-		Talk: expressions,
-	}
-	return clause
+	return recites
 }
 
 func Syntax(orations []Phrase, dome brand.Arbor, language string) []Recite {
-	var rate int = 2
-
+	var rate int = RATE
 	var subject Recite = SyntaxSubject(orations, dome, language, rate)
-	var predicates Recite = SyntaxPredicate(orations, dome, language, rate)
-
+	var predicates []Recite = SyntaxPredicate(orations, dome, language, rate)
 	var phrases []Recite
 	phrases = append(phrases, subject)
-	phrases = append(phrases, predicates)
+	phrases = append(phrases, predicates...)
 	return phrases
 }
 
 func Oration(orations []Phrase, sentence string, rate int) []Glossary {
-	var words []Word
+	var words []Talk
+	var order int = 1
 	for _, oration := range orations {
 		for _, word := range oration.Word {
-			words = append(words, word)
+			var talk Talk
+			talk.Etiology = append(talk.Etiology, word.Class)
+			talk.Pattern = append(talk.Pattern, word.Sentence)
+			talk.Term = word.Term
+			talk.Order = order
+			words = append(words, talk)
+			order++
 		}
 	}
-	var filters []Word
+	var filters []Talk
 	for _, subject := range words {
-		if subject.Sentence == sentence {
-			filters = append(filters, subject)
+		for _, term := range subject.Pattern {
+			if term == sentence {
+				filters = append(filters, subject)
+			}
 		}
 	}
-
-	var locutions []Phrase
-	var locution Phrase
-	locution.Word = filters
+	var locutions []Recite
+	var locution Recite
+	locution.Talk = filters
 	locutions = append(locutions, locution)
 	var glossaries []Glossary = SetGlossary(locutions)
 	var lexicons []Glossary = MountGlossary(glossaries, rate)
 	return lexicons
 }
 
-func Right(glossaries []Glossary, order int, quantity int) []Glossary {
-	var lenght int = len(glossaries)
-	var sequence int = order + quantity
-	if sequence >= lenght {
-		sequence = lenght - 1
+func SetGlossary(word []Recite) []Glossary {
+	var embendding []Glossary
+	var count int = 0
+	var size = len(word)
+	for count < size {
+		var spell Recite = word[count]
+		var length = len(spell.Talk)
+		var caption []Talk = spell.Talk
+		for index := range spell.Talk {
+			if index+1 == length {
+				var locution Glossary
+				locution.First = caption[index]
+				embendding = append(embendding, locution)
+			} else {
+				var locution Glossary
+				locution.First = caption[index]
+				locution.Second = caption[index+1]
+				embendding = append(embendding, locution)
+			}
+		}
+		count++
 	}
-	var lexicon []Glossary
-	var next int = 1
-	for count := order; count < sequence; count++ {
-		var first Word = glossaries[order].First
-		var second Word = glossaries[order+next].Second
-		var dictionary Glossary
-		dictionary.First = first
-		dictionary.Second = second
-		dictionary.Order = next
-		lexicon = append(lexicon, dictionary)
-		next++
-	}
-	return lexicon
-}
-
-func Left(glossaries []Glossary, order int, quantity int) []Glossary {
-	var sequence int = order - quantity
-	if sequence < 0 {
-		sequence = 0
-	}
-	var lexicon []Glossary
-	var next int = 1
-	for count := order; count > sequence; count-- {
-		var first Word = glossaries[order].First
-		var second Word = glossaries[order-next].First
-		var dictionary Glossary
-		dictionary.First = first
-		dictionary.Second = second
-		dictionary.Order = next * -1
-		lexicon = append(lexicon, dictionary)
-		next++
-	}
-	return lexicon
+	return embendding
 }
 
 func MountGlossary(glossaries []Glossary, rate int) []Glossary {
 	var lexicons []Glossary = glossaries
 	var length = len(glossaries)
-
 	for count := 0; count < length; count++ {
 		var left []Glossary = Left(glossaries, count, rate)
 		for _, item := range left {
@@ -1878,28 +2366,43 @@ func MountGlossary(glossaries []Glossary, rate int) []Glossary {
 	return lexicons
 }
 
-func SetGlossary(word []Phrase) []Glossary {
-	var embendding []Glossary
-
-	var count int = 0
-	var length_phrase = len(word)
-	for count < length_phrase {
-		var spell Phrase = word[count]
-		var length_word = len(spell.Word)
-		var caption []Word = spell.Word
-		for index := range spell.Word {
-			if index+1 == length_word {
-				var locution Glossary
-				locution.First = caption[index]
-				embendding = append(embendding, locution)
-			} else {
-				var locution Glossary
-				locution.First = caption[index]
-				locution.Second = caption[index+1]
-				embendding = append(embendding, locution)
-			}
-		}
-		count++
+func Right(glossaries []Glossary, order int, quantity int) []Glossary {
+	var lenght int = len(glossaries)
+	var sequence int = order + quantity
+	if sequence >= lenght {
+		sequence = lenght - 1
 	}
-	return embendding
+	var lexicon []Glossary
+	var next int = 1
+	for count := order; count < sequence; count++ {
+		var first Talk = glossaries[order].First
+		var second Talk = glossaries[order+next].Second
+		var dictionary Glossary
+		dictionary.First = first
+		dictionary.Second = second
+		dictionary.Order = next
+		lexicon = append(lexicon, dictionary)
+		next++
+	}
+	return lexicon
+}
+
+func Left(glossaries []Glossary, order int, quantity int) []Glossary {
+	var sequence int = order - quantity
+	if sequence < 0 {
+		sequence = 0
+	}
+	var lexicon []Glossary
+	var next int = 1
+	for count := order; count > sequence; count-- {
+		var first Talk = glossaries[order].First
+		var second Talk = glossaries[order-next].First
+		var dictionary Glossary
+		dictionary.First = first
+		dictionary.Second = second
+		dictionary.Order = next * -1
+		lexicon = append(lexicon, dictionary)
+		next++
+	}
+	return lexicon
 }

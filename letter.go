@@ -6,10 +6,12 @@ import (
 	"time"
 
 	"github.com/rs/cors"
+	"gocv.io/x/gocv"
 	"letter.go/brand"
 	"letter.go/grammar"
 	"letter.go/router"
 	"letter.go/sqlite"
+	"letter.go/stream"
 )
 
 func main() {
@@ -17,9 +19,9 @@ func main() {
 	fmt.Println("Start: ", start)
 	var arbor grammar.Arbor = sqlite.Build()
 	var dome brand.Arbor = sqlite.Forge()
-	router.Video()
+	var webcam *gocv.VideoCapture = stream.Video()
 	var init = time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), time.Now().Hour(), time.Now().Minute(), 0, 0, time.Local)
 	fmt.Println("Init: ", init)
-	handler := cors.AllowAll().Handler(router.Controller(arbor, dome))
+	handler := cors.AllowAll().Handler(router.Controller(arbor, dome, webcam))
 	http.ListenAndServe(":8885", handler)
 }

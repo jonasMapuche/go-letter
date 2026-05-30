@@ -1,44 +1,37 @@
 package stream
 
 import (
-	"net/http"
-	"strconv"
-
 	"gocv.io/x/gocv"
 )
 
-var (
-	webcam *gocv.VideoCapture
-	err    error
+const (
+	ONE = 0
 )
 
-func Video() {
-	deviceID := 1
+func Video() *gocv.VideoCapture {
+	var webcam *gocv.VideoCapture
+	var err error
+	deviceID := ONE
 	webcam, err = gocv.VideoCaptureDevice(deviceID)
-	if err != nil {
-		return
-	}
+	checkErr(err)
 	if !webcam.IsOpened() {
-		return
+		return webcam
 	}
+	return webcam
 }
 
-func Loop(writer http.ResponseWriter) {
-	var img gocv.Mat = gocv.NewMat()
-	defer img.Close()
-	if !webcam.IsOpened() {
-		return
+func Read(webcam *gocv.VideoCapture, image gocv.Mat) *gocv.NativeByteBuffer {
+	if ok := webcam.Read(&image); !ok || image.Empty() {
+		return nil
 	}
-	for {
-		if ok := webcam.Read(&img); !ok || img.Empty() {
-			return
-		}
-		buf, err := gocv.IMEncode(".jpg", img)
-		if err != nil {
-			continue
-		}
-		writer.Header().Set("Content-Length", strconv.Itoa(buf.Len()))
-		writer.Write(buf.GetBytes())
-		writer.(http.Flusher).Flush()
+	var buffer *gocv.NativeByteBuffer
+	buffer, err := gocv.IMEncode(".jpg", image)
+	checkErr(err)
+	return buffer
+}
+
+func checkErr(err error) {
+	if err != nil {
+		panic(err)
 	}
 }

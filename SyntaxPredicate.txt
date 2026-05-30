@@ -1,0 +1,129 @@
+func SyntaxPredicate(orations []Phrase, dome brand.Arbor, language string, rate int) []Recite {
+	var lexicons []Glossary = Oration(orations, PREDICATE, rate)
+	var recites []Recite
+	var verbs []Glossary
+	for _, predicate := range lexicons {
+		for _, term := range predicate.First.Etiology {
+			if term == VERB {
+				var verb Glossary
+				verb.First = predicate.First
+				verb.Second = predicate.Second
+				verb.Order = predicate.Order
+				verbs = append(verbs, verb)
+			}
+		}
+	}
+	var nouns []Glossary
+	for _, predicate := range lexicons {
+		for _, term := range predicate.First.Etiology {
+			if term == NOUN {
+				var noun Glossary
+				noun.First = predicate.First
+				noun.Second = predicate.Second
+				noun.Order = predicate.Order
+				nouns = append(nouns, noun)
+			}
+		}
+	}
+	var pronouns []Glossary
+	for _, predicate := range lexicons {
+		for _, term := range predicate.First.Etiology {
+			if term == PRONOUN {
+				var pronoun Glossary
+				pronoun.First = predicate.First
+				pronoun.Second = predicate.Second
+				pronoun.Order = predicate.Order
+				pronouns = append(pronouns, pronoun)
+			}
+		}
+	}
+	var adjectives []Glossary
+	for _, predicate := range lexicons {
+		for _, term := range predicate.First.Etiology {
+			if term == ADJECTIVE {
+				var adjective Glossary
+				adjective.First = predicate.First
+				adjective.Second = predicate.Second
+				adjective.Order = predicate.Order
+				adjectives = append(adjectives, adjective)
+			}
+		}
+	}
+	var prepositions []Glossary
+	for _, predicate := range lexicons {
+		for _, term := range predicate.First.Etiology {
+			if term == PREPOSITION {
+				var preposition Glossary
+				preposition.First = predicate.First
+				preposition.Second = predicate.Second
+				preposition.Order = predicate.Order
+				prepositions = append(prepositions, preposition)
+			}
+		}
+	}
+	var specials []Glossary
+	for _, predicate := range lexicons {
+		if TypeEspecial(predicate.First.Term) {
+			var special Glossary
+			special.First = predicate.First
+			special.Second = predicate.Second
+			special.Order = predicate.Order
+			specials = append(specials, special)
+		}
+	}
+	var adverbials_verbs []Recite = MountVerb(verbs)
+	recites = append(recites, adverbials_verbs...)
+	var adverbials_adjectives []Glossary = SplitAdjective(adjectives)
+	var qualities []Recite = MountAdjective(adverbials_adjectives)
+	recites = append(recites, qualities...)
+	var relations []Vocabulary
+	relations = MountConnection(lexicons, PREDICATE, dome, language)
+	var fit int = len(adverbials_verbs)
+	if fit > 1 {
+		return MountPeriod(lexicons, relations)
+	} else {
+		if relations != nil {
+			var kind Talk = KindConnection(relations)
+			var connection Talk = TypeConnection(relations)
+			for _, vocable := range kind.Etiology {
+				if vocable == NUMERAL || vocable == ADJECTIVE || vocable == PRONOUN {
+					var directs []Recite = MountNoun(nouns, prepositions, DIRECT)
+					var indirects []Recite = MountNoun(nouns, prepositions, INDIRECT)
+					var compounds []Recite
+					if directs != nil {
+						var first Recite = MountCompound(kind, prepositions, DIRECT)
+						directs = append(directs, first)
+						compounds = NounCompound(connection, directs, DIRECT)
+					} else {
+						var first Recite = MountCompound(kind, prepositions, INDIRECT)
+						indirects = append(indirects, first)
+						compounds = NounCompound(connection, indirects, INDIRECT)
+					}
+					recites = append(recites, compounds...)
+				}
+				if vocable == NOUN {
+					var surrogates []Glossary = SplitPronoun(pronouns)
+					nouns = append(nouns, surrogates...)
+					var directs []Recite = MountNoun(nouns, prepositions, DIRECT)
+					var indirects []Recite = MountNoun(nouns, prepositions, INDIRECT)
+					var compounds []Recite
+					if directs != nil {
+						compounds = NounCompound(connection, directs, DIRECT)
+					} else {
+						compounds = NounCompound(connection, indirects, INDIRECT)
+					}
+					recites = append(recites, compounds...)
+				}
+			}
+		} else {
+			
+			var surrogates []Glossary = SplitPronoun(pronouns)
+			nouns = append(nouns, surrogates...)
+			var directs []Recite = MountNoun(nouns, prepositions, DIRECT)
+			var indirects []Recite = MountNoun(nouns, prepositions, INDIRECT)
+			recites = append(recites, directs...)
+			recites = append(recites, indirects...)
+		}
+	}
+	return recites
+}

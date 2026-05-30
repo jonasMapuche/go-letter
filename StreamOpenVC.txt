@@ -1,0 +1,60 @@
+	/*
+		var img gocv.Mat = gocv.NewMat()
+		defer img.Close()
+		if !webcam.IsOpened() {
+			return
+		}
+		for {
+			if ok := webcam.Read(&img); !ok || img.Empty() {
+				return
+			}
+			buf, err := gocv.IMEncode(".jpg", img)
+			if err != nil {
+				continue
+			}
+			writer.Header().Set("Content-Length", strconv.Itoa(buf.Len()))
+			writer.Write(buf.GetBytes())
+			writer.(http.Flusher).Flush()
+		}
+	*/
+	
+	var (
+		webcam *gocv.VideoCapture
+		err    error
+	)
+	
+	func Video() {
+		deviceID := 0
+		webcam, err = gocv.VideoCaptureDevice(deviceID)
+		if err != nil {
+			return
+		}
+		if !webcam.IsOpened() {
+			return
+		}
+	}
+
+
+func HandleStream(writer http.ResponseWriter, request *http.Request, webcam *gocv.VideoCapture) {
+	stream.Loop(writer, webcam)
+	/*
+		writer.Header().Set("Content-Type", "multipart/x-mixed-replace; boundary=frame")
+		if !webcam.IsOpened() {
+			return
+		}
+		img := gocv.NewMat()
+		defer img.Close()
+		for {
+			if ok := webcam.Read(&img); !ok || img.Empty() {
+				return
+			}
+			buf, err := gocv.IMEncode(".jpg", img)
+			if err != nil {
+				continue
+			}
+			writer.Header().Set("Content-Length", strconv.Itoa(buf.Len()))
+			writer.Write(buf.GetBytes())
+			writer.(http.Flusher).Flush()
+		}
+	*/
+}

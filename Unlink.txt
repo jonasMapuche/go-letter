@@ -1,0 +1,110 @@
+			/*
+				for _, term := range word.Pattern {
+					if term == PREDICATE {
+						if preposition.Term != "" {
+							talk.Pattern = append(talk.Pattern, INDIRECT)
+						} else {
+							talk.Pattern = append(talk.Pattern, DIRECT)
+						}
+					}
+				}
+			*/
+
+/*
+func TypePeriod(talks []Talk) string {
+	var quantity int = 0
+	for _, verb := range talks {
+		for _, word := range verb.Etiology {
+			if word == VERB {
+				quantity++
+			}
+		}
+	}
+	var brand string = ""
+	if quantity > 1 {
+		brand = COMPOUND
+	} else {
+		brand = SAMPLE
+	}
+	return brand
+}
+*/
+
+				if vocable == ADVERB {
+					var directs []Recite = MountNoun(nouns, prepositions, DIRECT)
+					var indirects []Recite = MountNoun(nouns, prepositions, INDIRECT)
+					var dictions []Glossary = FilterGlossary(lexicons, kind)
+					var adjectives []Recite = MountAdverb(lexicons, dictions)
+					var compounds []Recite
+					if directs != nil {
+						directs = append(directs, adjectives...)
+						compounds = NounCompound(connection, directs, DIRECT)
+					} else {
+						indirects = append(indirects, adjectives...)
+						compounds = NounCompound(connection, indirects, INDIRECT)
+					}
+					recipes = append(recipes, compounds...)
+				}
+
+
+
+			if vocable == ADVERB {
+				var dictions []Glossary = FilterGlossary(lexicons, kind)
+				var adjectives []Recite = MountAdverb(lexicons, dictions)
+				var boths []Recite = MountNoun(nouns, prepositions, BOTH)
+				boths = append(boths, adjectives...)
+				var compounds []Recite = NounCompound(connection, boths, COMPOUND)
+				recite = compounds[0]
+			}
+			
+			
+			
+					for _, value := range arbor.Verb {
+						var term string = spell.Term
+						var preposition bool = false
+						//var second bool = false
+						//var double bool = false
+						if language == ENGLISH {
+							preposition = PrepositionVerb(spell.Term)
+							if preposition {
+								term = SplitVerb(spell.Term)
+							}
+							/*
+								else {
+									second = SecondVerb(term, unit)
+									double = DoubleVerb(term)
+								}
+							*/
+						}
+						if value.Name == strings.ToLower(term) && value.Language == language && spell.Sentence == "" {
+							/*
+								if preposition || !second || double {
+									spell.Class = VERB
+									spell.Sentence = PREDICATE
+								}
+							*/
+							spell.Class = VERB
+							spell.Sentence = PREDICATE
+						}
+					}
+					
+					
+					func SecondVerb(term string, unit []Word) bool {
+						var vocable []string = strings.Split(term, " ")
+						if len(vocable) == 1 {
+							if GetVerb(unit) {
+								return true
+							} else {
+								return false
+							}
+						}
+						return false
+					}
+					
+					func DoubleVerb(term string) bool {
+						var vocable []string = strings.Split(term, " ")
+						if len(vocable) > 1 {
+							return true
+						}
+						return false
+}
