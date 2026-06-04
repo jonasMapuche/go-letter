@@ -1,13 +1,10 @@
 package stream
 
-import (
-	"gocv.io/x/gocv"
-)
-
 const (
 	ONE = 0
 )
 
+/*
 func Video() *gocv.VideoCapture {
 	var webcam *gocv.VideoCapture
 	var err error
@@ -29,6 +26,7 @@ func Read(webcam *gocv.VideoCapture, image gocv.Mat) *gocv.NativeByteBuffer {
 	checkErr(err)
 	return buffer
 }
+*/
 
 func checkErr(err error) {
 	if err != nil {

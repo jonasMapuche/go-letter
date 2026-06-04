@@ -6,14 +6,11 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
-	"strconv"
 
-	"gocv.io/x/gocv"
 	"letter.go/arquive"
 	"letter.go/brand"
 	"letter.go/grammar"
 	"letter.go/logic"
-	"letter.go/stream"
 )
 
 type Color struct {
@@ -62,6 +59,7 @@ const (
 	LOCAL         = "Production"
 )
 
+/*
 func Controller(arbor grammar.Arbor, dome brand.Arbor, webcam *gocv.VideoCapture) *http.ServeMux {
 
 	mux := http.NewServeMux()
@@ -181,6 +179,130 @@ func Controller(arbor grammar.Arbor, dome brand.Arbor, webcam *gocv.VideoCapture
 			switch request.Method {
 			case "GET":
 				HandleStream(writer, request, webcam)
+			}
+		default:
+			http.NotFound(writer, request)
+		}
+	})
+
+	return mux
+}
+*/
+
+func Controller(arbor grammar.Arbor, dome brand.Arbor) *http.ServeMux {
+
+	mux := http.NewServeMux()
+
+	mux.HandleFunc("/", func(writer http.ResponseWriter, request *http.Request) {
+		switch request.URL.Path {
+		case "/":
+			switch request.Method {
+			case "GET":
+				writer.Header().Set("Access-Control-Allow-Origin", "*")
+				writer.Write([]byte("Grammar structure program."))
+			case "POST":
+				HandlePost(writer, request)
+			}
+		case "/Go":
+			switch request.Method {
+			case "POST":
+				HandleGo(writer, request, arbor)
+			}
+		case "/Message":
+			switch request.Method {
+			case "POST":
+				HandleMessage(writer, request, arbor)
+			}
+		case "/Translate":
+			switch request.Method {
+			case "POST":
+				HandleTranslate(writer, request, arbor)
+			}
+		case "/Logic":
+			switch request.Method {
+			case "POST":
+				HandleLogic(writer, request, arbor)
+			}
+		case "/Adverb":
+			switch request.Method {
+			case "GET":
+				HandleAdverb(writer, dome)
+			}
+		case "/Pronoun":
+			switch request.Method {
+			case "GET":
+				HandlePronoun(writer, dome)
+			}
+		case "/Article":
+			switch request.Method {
+			case "GET":
+				HandleArticle(writer, dome)
+			}
+		case "/Conjunction":
+			switch request.Method {
+			case "GET":
+				HandleConjunction(writer, dome)
+			}
+		case "/Numeral":
+			switch request.Method {
+			case "GET":
+				HandleNumeral(writer, dome)
+			}
+		case "/Preposition":
+			switch request.Method {
+			case "GET":
+				HandlePreposition(writer, dome)
+			}
+		case "/Verb":
+			switch request.Method {
+			case "GET":
+				HandleVerb(writer, dome)
+			}
+		case "/Adjective":
+			switch request.Method {
+			case "GET":
+				HandleAdjective(writer, dome)
+			}
+		case "/Noun":
+			switch request.Method {
+			case "GET":
+				HandleNoun(writer, dome)
+			}
+		case "/Model":
+			switch request.Method {
+			case "GET":
+				HandleModel(writer, dome)
+			}
+		case "/Sentence":
+			switch request.Method {
+			case "GET":
+				HandleSentence(writer, dome)
+			}
+		case "/Auxiliary":
+			switch request.Method {
+			case "GET":
+				HandleAuxiliary(writer, dome)
+			}
+		case "/File":
+			switch request.Method {
+			case "POST":
+				HandleFile(writer, request)
+			case "DELETE":
+				HandleDelete(writer, request)
+			case "GET":
+				HandleDownloadGet(writer, request)
+			}
+		case "/Download":
+			switch request.Method {
+			case "POST":
+				HandleDownload(writer, request)
+			case "GET":
+				HandleDownloadGet(writer, request)
+			}
+		case "/Syntax":
+			switch request.Method {
+			case "POST":
+				HandleSyntax(writer, request, arbor, dome)
 			}
 		default:
 			http.NotFound(writer, request)
@@ -568,6 +690,7 @@ func HandleSyntax(writer http.ResponseWriter, request *http.Request, arbor gramm
 	writer.Write([]byte(responseJSON))
 }
 
+/*
 func HandleStream(writer http.ResponseWriter, request *http.Request, webcam *gocv.VideoCapture) {
 	writer.Header().Set("Content-Type", "multipart/x-mixed-replace; boundary=frame")
 	if !webcam.IsOpened() {
@@ -583,6 +706,7 @@ func HandleStream(writer http.ResponseWriter, request *http.Request, webcam *goc
 		writer.(http.Flusher).Flush()
 	}
 }
+*/
 
 func checkErr(err error) {
 	if err != nil {
