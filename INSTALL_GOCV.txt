@@ -1,0 +1,48 @@
+sudo apt-cache policy gstreamer1.0-plugins-good gstreamer1.0-plugins-base gstreamer1.0-plugins-bad
+sudo apt-cache policy build-essential cmake git pkg-config
+sudo apt-cache policy g++-arm-linux-gnueabihf gcc-arm-linux-gnueabihf
+
+cd ~
+git clone https://github.com/opencv/opencv.git
+git clone https://github.com/opencv/opencv_contrib.git
+
+sudo nano  ~/.bashrc
+export GOPATH=$HOME/Workspace/Golang
+source ~/.bashrc
+
+cd opencv && git checkout 4.10.0
+cd ../opencv_contrib && git checkout 4.10.0
+
+cmake -D CMAKE_BUILD_TYPE=Release \
+      -D CMAKE_TOOLCHAIN_FILE=../platforms/linux/arm-gnueabi.toolchain.cmake \
+      -D CMAKE_INSTALL_PREFIX=/usr/local/arm-opencv \
+      -D OPENCV_GENERATE_PKGCONFIG=YES \
+      -D OPENCV_EXTRA_MODULES_PATH=../../opencv_contrib/modules \
+      -D BUILD_EXAMPLES=OFF ..
+      
+make -j1
+sudo make install
+
+sudo nano  ~/.bashrc
+export PKG_CONFIG_PATH=/usr/local/arm-opencv/lib/pkgconfig
+source ~/.bashrc
+
+go env GOOS GOARCH GOARM CGO_ENABLED CC CXX
+
+go env -w GOOS=linux
+go env -w GOARCH=arm
+go env -w GOARM=7
+go env -w CGO_ENABLED=1
+go env -w CC=arm-linux-gnueabihf-gcc
+go env -w CXX=arm-linux-gnueabihf-g++
+
+PKG_CONFIG_PATH=/usr/local/arm-opencv/lib/pkgconfig go build opencv.go
+
+go env -w GOOS="linux"
+go env -w GOARCH="amd64"
+go env -w GOARM=""
+go env -w CGO_ENABLED="1"
+go env -w CC="gcc"
+go env -w CXX="g++"
+
+

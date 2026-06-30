@@ -1,4 +1,4 @@
-package stream
+package flood
 
 const (
 	ONE = 0
@@ -10,6 +10,7 @@ func Video() *gocv.VideoCapture {
 	var err error
 	deviceID := ONE
 	webcam, err = gocv.VideoCaptureDevice(deviceID)
+	//webcam, err = gocv.OpenVideoCaptureWithAPI(deviceID, gocv.VideoCaptureGstreamer)
 	checkErr(err)
 	if !webcam.IsOpened() {
 		return webcam
@@ -25,6 +26,13 @@ func Read(webcam *gocv.VideoCapture, image gocv.Mat) *gocv.NativeByteBuffer {
 	buffer, err := gocv.IMEncode(".jpg", image)
 	checkErr(err)
 	return buffer
+}
+
+func Write(webcam *gocv.VideoCapture, image gocv.Mat) {
+	if ok := webcam.Read(&image); !ok || image.Empty() {
+		return
+	}
+	_ = gocv.IMWrite("imagem_baixada.jpg", image)
 }
 */
 

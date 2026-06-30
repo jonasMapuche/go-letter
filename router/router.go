@@ -180,6 +180,11 @@ func Controller(arbor grammar.Arbor, dome brand.Arbor, webcam *gocv.VideoCapture
 			case "GET":
 				HandleStream(writer, request, webcam)
 			}
+		case "/Photo":
+			switch request.Method {
+			case "GET":
+				HandlePhoto(writer, request, webcam)
+			}
 		default:
 			http.NotFound(writer, request)
 		}
@@ -692,19 +697,35 @@ func HandleSyntax(writer http.ResponseWriter, request *http.Request, arbor gramm
 
 /*
 func HandleStream(writer http.ResponseWriter, request *http.Request, webcam *gocv.VideoCapture) {
-	writer.Header().Set("Content-Type", "multipart/x-mixed-replace; boundary=frame")
 	if !webcam.IsOpened() {
 		return
 	}
 	var image gocv.Mat = gocv.NewMat()
 	defer image.Close()
 	for {
+		writer.Header().Set("Content-Type", "multipart/x-mixed-replace; boundary=frame")
 		var buffer *gocv.NativeByteBuffer
-		buffer = stream.Read(webcam, image)
-		writer.Header().Set("Content-Length", strconv.Itoa(buffer.Len()))
-		writer.Write(buffer.GetBytes())
+		buffer = flood.Read(webcam, image)
+		var err error
+		_, err = writer.Write(buffer.GetBytes())
+		checkErr(err)
 		writer.(http.Flusher).Flush()
 	}
+}
+
+func HandlePhoto(writer http.ResponseWriter, request *http.Request, webcam *gocv.VideoCapture) {
+	if !webcam.IsOpened() {
+		return
+	}
+	var image gocv.Mat = gocv.NewMat()
+	defer image.Close()
+	writer.Header().Set("Content-Type", "image/jpeg")
+	var buffer *gocv.NativeByteBuffer
+	buffer = flood.Read(webcam, image)
+	var err error
+	_, err = writer.Write(buffer.GetBytes())
+	checkErr(err)
+	writer.(http.Flusher).Flush()
 }
 */
 

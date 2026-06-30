@@ -1,16 +1,16 @@
 module letter.go
 
-go 1.21
-
-require github.com/gorilla/handlers v1.5.1
+go 1.23.2
 
 require (
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
+	github.com/hybridgroup/mjpeg v0.0.0-20250330094202-16d243df0e35 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-sqlite3 v1.14.22 // indirect
 	github.com/ncruces/go-strftime v0.1.9 // indirect
+	github.com/nsmith5/mjpeg v0.0.0-20200913181537-54b8ada0e53e // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	gocv.io/x/gocv v0.43.0 // indirect
 	golang.org/x/sys v0.19.0 // indirect
