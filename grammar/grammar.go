@@ -168,6 +168,9 @@ const (
 	ENUMERATIVE   = "enumerativo"
 	CONNECTIVE    = "conectivo"
 	RATE          = 2
+	PREVIOUSLY    = "previously"
+	AFTER         = "after"
+	EXPLANATORY   = "explicativo"
 )
 
 func GetVerb(word []Word) bool {
@@ -1237,7 +1240,7 @@ func CompareTalk(first Talk, second Talk) bool {
 }
 
 func MountCompound(noun Talk, prepositions []Glossary, integrant string) Recite {
-	var recipe Recite
+	var recite Recite
 	var talk Talk
 	talk.Term = noun.Term
 	talk.Etiology = noun.Etiology
@@ -1255,15 +1258,15 @@ func MountCompound(noun Talk, prepositions []Glossary, integrant string) Recite 
 	if link.Term != "" && (integrant == INDIRECT || integrant == BOTH) {
 		terms = append(terms, link)
 		terms = append(terms, talk)
-		recipe.Kind = INDIRECT
-		recipe.Talk = terms
+		recite.Kind = INDIRECT
+		recite.Talk = terms
 	}
 	if link.Term == "" && (integrant == DIRECT || integrant == BOTH) {
 		terms = append(terms, talk)
-		recipe.Kind = DIRECT
-		recipe.Talk = terms
+		recite.Kind = DIRECT
+		recite.Talk = terms
 	}
-	return recipe
+	return recite
 }
 
 func MountNoun(nouns []Glossary, prepositions []Glossary, integrant string) []Recite {
@@ -1382,11 +1385,11 @@ func MountNoun(nouns []Glossary, prepositions []Glossary, integrant string) []Re
 				talk.Order = word.Order
 				talks = append(talks, talk)
 			}
-			var recipe = Recite{
+			var recite = Recite{
 				Kind: integrant,
 				Talk: talks,
 			}
-			recipes = append(recipes, recipe)
+			recipes = append(recipes, recite)
 		}
 	}
 	return recipes
@@ -1458,11 +1461,11 @@ func MountVerb(verbs []Glossary) []Recite {
 			talk.Order = word.Order
 			talks = append(talks, talk)
 		}
-		var recipe Recite = Recite{
+		var recite Recite = Recite{
 			Kind: VERB,
 			Talk: talks,
 		}
-		recites = append(recites, recipe)
+		recites = append(recites, recite)
 	}
 	return recites
 }
@@ -1528,11 +1531,11 @@ func MountAdjective(adjectives []Glossary) []Recite {
 			talk.Order = word.Order
 			talks = append(talks, talk)
 		}
-		var recipe = Recite{
+		var recite = Recite{
 			Kind: PREDICATIVE,
 			Talk: talks,
 		}
-		recipes = append(recipes, recipe)
+		recipes = append(recipes, recite)
 	}
 	return recipes
 }
@@ -1626,11 +1629,11 @@ func MountAdverb(glossaries []Glossary, adverbs []Glossary) []Recite {
 			talk.Order = word.Order
 			talks = append(talks, talk)
 		}
-		var recipe = Recite{
+		var recite = Recite{
 			Kind: DIRECT,
 			Talk: talks,
 		}
-		recipes = append(recipes, recipe)
+		recipes = append(recipes, recite)
 	}
 	return recipes
 }
@@ -1789,11 +1792,11 @@ func NounCompound(connection Talk, captions []Recite, kind string) []Recite {
 	sort.Slice(expressions, func(i, j int) bool {
 		return expressions[i].Order < expressions[j].Order
 	})
-	var recipe = Recite{
+	var recite = Recite{
 		Kind: kind,
 		Talk: expressions,
 	}
-	recipes = append(recipes, recipe)
+	recipes = append(recipes, recite)
 	return recipes
 }
 
@@ -2032,8 +2035,14 @@ func MountPeriod(glossaries []Glossary, relations []Vocabulary) []Recite {
 	return recites
 }
 
-func SyntaxSubject(orations []Phrase, dome brand.Arbor, language string, rate int) Recite {
-	var lexicons []Glossary = Oration(orations, SUBJECT, rate)
+func SyntaxSubject(orations []Phrase, dome brand.Arbor, language string) Recite {
+	var lexicons []Glossary = Oration(orations, SUBJECT, RATE)
+	var recite Recite
+	recite = Subject(lexicons, dome, language)
+	return recite
+}
+
+func Subject(lexicons []Glossary, dome brand.Arbor, language string) Recite {
 	var nouns []Glossary
 	for _, subject := range lexicons {
 		for _, term := range subject.First.Etiology {
@@ -2120,24 +2129,62 @@ func TypeAppositive(glossaries []Glossary) bool {
 	return appositive
 }
 
-func MountAppositive(glossaries []Glossary) []Recite {
+func PhraseAppositive(glossaries []Glossary, dome brand.Arbor, language string, orations []Phrase) []Recite {
+	var predicates []Recite = Predicate(glossaries, dome, language, orations)
+	var phrases []Recite
+	phrases = append(phrases, predicates...)
 	var recites []Recite
+	for _, phrase := range phrases {
+		if phrase.Talk == nil {
+			continue
+		}
+		var recite Recite
+		recite.Kind = EXPLANATORY
+		var talks []Talk
+		for _, talk := range phrase.Talk {
+			var term Talk
+			term.Term = talk.Term
+			term.Etiology = talk.Etiology
+			term.Pattern = talk.Pattern
+			term.Order = talk.Order
+			term.Pattern = append(term.Pattern, APPOSITIVE)
+			talks = append(talks, term)
+		}
+		recite.Talk = talks
+		recites = append(recites, recite)
+	}
+	return recites
+}
+
+func RemoveAppositive(recites []Recite, order int) []Recite {
+	var declaim []Recite
+	for _, recite := range recites {
+		var find bool = false
+		for _, talk := range recite.Talk {
+			if talk.Order > order {
+				find = true
+			}
+		}
+		if !find {
+			declaim = append(declaim, recite)
+		}
+	}
+	return declaim
+}
+
+func MountAppositive(glossaries []Glossary, dome brand.Arbor, language string, orations []Phrase, declaim []Recite) []Recite {
 	var order int = 0
 	for _, glossary := range glossaries {
 		if glossary.First.Term == COLON {
 			order = glossary.First.Order
 		}
 	}
+	var recites []Recite
+	recites = RemoveAppositive(declaim, order)
 	var predicates []Glossary
+	predicates = OrationAppositive(orations, order, RATE, PREVIOUSLY, PREDICATE)
 	var appositives []Glossary
-	for _, glossary := range glossaries {
-		if glossary.First.Order < order {
-			predicates = append(predicates, glossary)
-		}
-		if glossary.First.Order > order {
-			appositives = append(appositives, glossary)
-		}
-	}
+	appositives = OrationAppositive(orations, order, RATE, AFTER, PREDICATE)
 	var captions []Recite = PeriodSample(predicates)
 	recites = append(recites, captions...)
 	var conjunctions []Glossary
@@ -2166,6 +2213,12 @@ func MountAppositive(glossaries []Glossary) []Recite {
 	connections = append(connections, conjunctions...)
 	connections = append(connections, specials...)
 	var talks []Talk
+	if conjunctions == nil {
+		var phrases []Recite
+		phrases = PhraseAppositive(appositives, dome, language, orations)
+		recites = append(recites, phrases...)
+		return recites
+	}
 	var contact Talk = conjunctions[0].First
 	for index, appositive := range appositives {
 		if appositive.Order == 0 {
@@ -2189,11 +2242,11 @@ func MountAppositive(glossaries []Glossary) []Recite {
 			}
 			for _, connection := range connections {
 				if CompareTalk(appositive.First, connection.First) {
-					var recipe = Recite{
+					var recite = Recite{
 						Kind: ENUMERATIVE,
 						Talk: talks,
 					}
-					recites = append(recites, recipe)
+					recites = append(recites, recite)
 					var talk Talk
 					if appositive.First.Term == COMMA {
 						talk.Term = conjunctions[0].First.Term
@@ -2225,8 +2278,14 @@ func MountAppositive(glossaries []Glossary) []Recite {
 	return recites
 }
 
-func SyntaxPredicate(orations []Phrase, dome brand.Arbor, language string, rate int) []Recite {
-	var lexicons []Glossary = Oration(orations, PREDICATE, rate)
+func SyntaxPredicate(orations []Phrase, dome brand.Arbor, language string) []Recite {
+	var lexicons []Glossary = Oration(orations, PREDICATE, RATE)
+	var recites []Recite
+	recites = Predicate(lexicons, dome, language, orations)
+	return recites
+}
+
+func Predicate(lexicons []Glossary, dome brand.Arbor, language string, orations []Phrase) []Recite {
 	var recites []Recite
 	var verbs []Glossary
 	for _, predicate := range lexicons {
@@ -2256,9 +2315,9 @@ func SyntaxPredicate(orations []Phrase, dome brand.Arbor, language string, rate 
 	relations = MountConnection(lexicons, PREDICATE, dome, language)
 	var appositive bool = TypeAppositive(specials)
 	if appositive {
-		var declaim []Recite = MountAppositive(lexicons)
-		recites = append(recites, declaim...)
-		return recites
+		var declaim []Recite = MountAppositive(lexicons, dome, language, orations, recites)
+		//recites = append(recites, declaim...)
+		return declaim
 	}
 	var fit int = len(adverbials_verbs)
 	if fit > 1 {
@@ -2277,9 +2336,8 @@ func SyntaxPredicate(orations []Phrase, dome brand.Arbor, language string, rate 
 }
 
 func Syntax(orations []Phrase, dome brand.Arbor, language string) []Recite {
-	var rate int = RATE
-	var subject Recite = SyntaxSubject(orations, dome, language, rate)
-	var predicates []Recite = SyntaxPredicate(orations, dome, language, rate)
+	var subject Recite = SyntaxSubject(orations, dome, language)
+	var predicates []Recite = SyntaxPredicate(orations, dome, language)
 	var phrases []Recite
 	phrases = append(phrases, subject)
 	phrases = append(phrases, predicates...)
@@ -2305,6 +2363,51 @@ func Oration(orations []Phrase, sentence string, rate int) []Glossary {
 		for _, term := range subject.Pattern {
 			if term == sentence {
 				filters = append(filters, subject)
+			}
+		}
+	}
+	var locutions []Recite
+	var locution Recite
+	locution.Talk = filters
+	locutions = append(locutions, locution)
+	var glossaries []Glossary = SetGlossary(locutions)
+	var lexicons []Glossary = MountGlossary(glossaries, rate)
+	return lexicons
+}
+
+func OrationAppositive(orations []Phrase, division int, rate int, kind string, sentence string) []Glossary {
+	var words []Talk
+	var order int = 1
+	for _, oration := range orations {
+		for _, word := range oration.Word {
+			var talk Talk
+			talk.Etiology = append(talk.Etiology, word.Class)
+			talk.Pattern = append(talk.Pattern, word.Sentence)
+			talk.Term = word.Term
+			talk.Order = order
+			words = append(words, talk)
+			order++
+		}
+	}
+	var sentences []Talk
+	for _, talk := range words {
+		for _, term := range talk.Pattern {
+			if term == sentence {
+				sentences = append(sentences, talk)
+			}
+		}
+	}
+	var filters []Talk
+	if kind == AFTER {
+		for _, talk := range sentences {
+			if talk.Order > division {
+				filters = append(filters, talk)
+			}
+		}
+	} else {
+		for _, talk := range sentences {
+			if talk.Order < division {
+				filters = append(filters, talk)
 			}
 		}
 	}
