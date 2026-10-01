@@ -500,11 +500,14 @@ func Slash(word []Word, arbor Arbor, language string, predicate bool) []Word {
 		}
 		for _, value := range arbor.Verb {
 			var term string = spell.Term
-			var preposition bool = false
 			if language == ENGLISH {
+				var preposition bool = false
 				preposition = PrepositionVerb(spell.Term)
 				if preposition {
 					term = SplitVerb(spell.Term)
+				}
+				if GetVerb(unit) && !preposition {
+					continue
 				}
 			}
 			if value.Name == strings.ToLower(term) && value.Language == language && spell.Sentence == "" {
@@ -1281,6 +1284,7 @@ func MountNoun(nouns []Glossary, prepositions []Glossary, integrant string) []Re
 		var article Talk
 		var pronome Talk
 		var numeral Talk
+		var suffix Talk
 		var adverb Talk
 		var adverb_adverb Talk
 		var adjetivo Talk
@@ -1334,6 +1338,9 @@ func MountNoun(nouns []Glossary, prepositions []Glossary, integrant string) []Re
 					if vocable == PRONOUN && order != 0 {
 						pronome = second
 					}
+					if vocable == NUMERAL && order == 0 {
+						suffix = second
+					}
 				}
 				if exit {
 					break
@@ -1370,6 +1377,9 @@ func MountNoun(nouns []Glossary, prepositions []Glossary, integrant string) []Re
 			words = append(words, pronome)
 		}
 		if noun.Term != "" {
+			if suffix.Term != "" {
+				noun.Term = noun.Term + " " + suffix.Term
+			}
 			words = append(words, noun)
 		}
 		if integrant == BOTH ||

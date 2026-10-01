@@ -11,6 +11,7 @@ import (
 	"letter.go/brand"
 	"letter.go/grammar"
 	"letter.go/logic"
+	"letter.go/push"
 )
 
 type Color struct {
@@ -48,6 +49,12 @@ type Grammar struct {
 
 type Download struct {
 	File string `json:"download"`
+}
+
+type Notification struct {
+	Token   string `json:"token"`
+	Title   string `json:"title"`
+	Message string `json:"message"`
 }
 
 const (
@@ -309,6 +316,12 @@ func Controller(arbor grammar.Arbor, dome brand.Arbor) *http.ServeMux {
 			case "POST":
 				HandleSyntax(writer, request, arbor, dome)
 			}
+		case "/Push":
+			switch request.Method {
+			case "POST":
+				HandlePush(writer, request)
+			}
+
 		default:
 			http.NotFound(writer, request)
 		}
@@ -692,6 +705,22 @@ func HandleSyntax(writer http.ResponseWriter, request *http.Request, arbor gramm
 	checkErr(err)
 
 	writer.Header().Set("Content-Type", "application/json")
+	writer.Write([]byte(responseJSON))
+}
+
+func HandlePush(writer http.ResponseWriter, request *http.Request) {
+	defer request.Body.Close()
+
+	var result Notification
+	var err = json.NewDecoder(request.Body).Decode(&result)
+	checkErr(err)
+
+	value := push.Send(result.Token, result.Message, result.Title)
+	response := value
+
+	responseJSON, err := json.Marshal(response)
+	checkErr(err)
+	writer.Header().Set("Access-Control-Allow-Origin", "*")
 	writer.Write([]byte(responseJSON))
 }
 
